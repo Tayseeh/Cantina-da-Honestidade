@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import mysql.connector
 from mysql.connector import Error
-
+#http://127.0.0.1:5000/login
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_cantina'
 
@@ -10,7 +10,7 @@ def executa_sql(sql, valores=None):
         myconn = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='', # Coloque sua senha do MySQL
+            password='123456', # Coloque sua senha do MySQL
             database='cantina',
         )
         mycur = myconn.cursor(dictionary=True) 
@@ -37,18 +37,18 @@ def executa_sql(sql, valores=None):
             myconn.close()
         return None
 
-def inicializar_banco():
+def inicializar_banco():        
     # Comando SQL
     sql_criar_tabela = """
     CREATE TABLE IF NOT EXISTS produtos (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        nome VARCHAR(50) NOT NULL,
+        nome VARCHAR(20) NOT NULL,
         preco DECIMAL(10, 2) NOT NULL,
         quantidade_estoque INT NOT NULL
     )
     """
     executa_sql(sql_criar_tabela)
-    print("Verificação do banco de dados concluída: Tabela 'produtos' pronta!")
+    print("Verificação concluída: Tabela 'produtos' pronta")
 
     # --- Rota de login ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -72,7 +72,7 @@ def logout():
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
 
-# --- Rota do crud  ---
+# --- rota do crud  ---
 @app.route('/')
 def index():
     if 'logado' not in session:
@@ -92,7 +92,7 @@ def incluir():
     sql = "INSERT INTO produtos (nome, preco, quantidade_estoque) VALUES (%s, %s, %s)"
     executa_sql(sql, (nome, float(preco), int(estoque)))
     
-    flash('Produto incluído com sucesso!', 'success')
+    flash('Produto incluído com sucesso', 'success')
     return redirect(url_for('index'))
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
@@ -106,7 +106,7 @@ def editar(id):
         sql = "UPDATE produtos SET nome=%s, preco=%s, quantidade_estoque=%s WHERE id=%s"
         executa_sql(sql, (nome, float(preco), int(estoque), id))
         
-        flash('Produto alterado com sucesso!', 'success')
+        flash('Produto alterado com sucesso', 'success')
         return redirect(url_for('index'))
     else:
         produtos = executa_sql("SELECT * FROM produtos WHERE id = %s", (id,))
@@ -117,7 +117,7 @@ def editar(id):
 def excluir(id):
     # função DELETE
     executa_sql("DELETE FROM produtos WHERE id = %s", (id,))
-    flash('Produto excluído com sucesso!', 'success')
+    flash('Produto excluído com sucesso', 'success')
     return redirect(url_for('index'))
 
 if __name__ == '__main__':

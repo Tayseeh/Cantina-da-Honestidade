@@ -69,7 +69,8 @@
                             <td>{{ p.quantidade_estoque }}</td>
                             <td class="text-center">
                                 <a href="/editar/{{ p.id }}" class="btn btn-sm btn-primary">Editar</a>
-                                <a href="/excluir/{{ p.id }}" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir o produto {{ p.nome }}?')">Excluir</a>
+                                <a href="/excluir/{{ p.id }}" class="btn btn-sm btn-danger"
+                                 onclick="return confirm('Tem certeza que deseja excluir o produto {{ p.nome }}?')">Excluir</a>
                             </td>
                         </tr>
                         {% else %}
