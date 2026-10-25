@@ -14,11 +14,21 @@
                 <form action="/editar/{{ produto.id }}" method="POST">
                     <div class="mb-3">
                         <label class="form-label">Nome do Produto</label>
-                        <input type="text" name="nome" class="form-control" value="{{ produto.nome }}" required>
+                        <input type="text" name="nome" class="form-control" value="{{ produto.nome }}" maxlength="30" required>  
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Preço (R$)</label>
-                        <input type="number" name="preco" class="form-control" step="0.01" min="0" value="{{ produto.preco }}" required>
+                        <label class="form-label">Descrição do Produto</label>
+                        <textarea name="descricao" class="form-control" rows="3">{{ produto.descricao }}</textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Valor de Compra (R$)</label>
+                            <input type="number" name="valor_compra" class="form-control" step="0.01" min="0" value="{{ produto.valor_compra }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Valor de Venda (R$)</label>
+                            <input type="number" name="valor_venda" class="form-control" step="0.01" min="0" value="{{ produto.valor_venda }}" required>
+                        </div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Estoque</label>
@@ -27,6 +37,7 @@
                     <div class="d-flex justify-content-between">
                         <a href="/" class="btn btn-secondary">Voltar</a>
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </div>
                     </div>
                 </form>
             </div>
