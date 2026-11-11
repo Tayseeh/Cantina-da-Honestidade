@@ -1,0 +1,39 @@
+{# Ajuda rápida e atalhos de navegação disponíveis ao usuário. #}
+{% extends 'base.html' %}
+{% block title %}Ajuda e orientações | Confia+</div>
+{% endblock %}
+{% block content %}
+<div class="help-page-layout">
+<p class="section-kicker mb-1">Ajuda para clientes</p>
+<h1 class="page-title h2 mb-2">Como usar o Confia+</h1>
+<p class="text-muted mb-4 help-subtitle-mobile">Veja como escolher produtos, finalizar compras e acompanhar seus pedidos.</p>
+<p class="text-muted mb-4 help-subtitle-desktop">Veja como fazer uma compra e usar os recursos de navegação do Confia+.</p>
+
+<section class="row g-3 mb-4 help-purchase-steps" aria-label="Etapas para comprar">
+  <div class="col-md-6"><article class="quick-step h-100"><span class="step-num">1</span><h2 class="h5">Escolha os produtos</h2><p class="mb-0 text-muted">Na página <a href="{{ url_for('catalog') }}">Produtos</a>, confira os preços e toque em <strong>Adicionar</strong>. Se preferir, use <strong>Ler QR Code</strong> para localizar um produto.</p></article></div>
+  <div class="col-md-6"><article class="quick-step h-100"><span class="step-num">2</span><h2 class="h5">Revise o carrinho</h2><p class="mb-0 text-muted">Na página <strong>Produtos</strong>, abra <strong>Meu carrinho</strong> ou toque em <strong>Ver carrinho</strong>. Ajuste as quantidades ou remova itens antes de continuar.</p></article></div>
+  <div class="col-md-6"><article class="quick-step h-100"><span class="step-num">3</span><h2 class="h5">Confirme o pagamento</h2><p class="mb-0 text-muted">Confira o total, informe seu <strong>PIN de pagamento</strong> e toque em <strong>Finalizar compra</strong>. O valor será descontado da sua carteira.</p></article></div>
+  <div class="col-md-6"><article class="quick-step h-100"><span class="step-num">4</span><h2 class="h5">Acompanhe a compra</h2><p class="mb-0 text-muted">A compra concluída aparece em <a href="{{ url_for('history') }}">Meus pedidos</a>. Você também pode consultar suas notificações e o saldo da carteira.</p></article></div>
+</section>
+
+<section class="card mb-4 help-accessibility-section" aria-labelledby="atalhos-teclado-titulo"><div class="card-body p-4">
+  <h2 id="atalhos-teclado-titulo" class="h5 mb-2">Navegar pelo teclado</h2>
+  <p class="text-muted">O contorno destacado mostra onde você está na página.</p>
+  <dl class="keyboard-help-list mb-0">
+    <div><dt><kbd>Tab</kbd></dt><dd>Avança para o próximo link, botão ou campo. Na página Produtos, os dois primeiros links levam diretamente aos produtos e ao carrinho.</dd></div>
+    <div><dt><kbd>Alt</kbd> + <kbd>1</kbd></dt><dd>Vai direto para os produtos na página Produtos.</dd></div>
+    <div><dt><kbd>Alt</kbd> + <kbd>2</kbd></dt><dd>Vai direto para o carrinho na página Produtos.</dd></div>
+    <div><dt><kbd>Shift</kbd> + <kbd>Tab</kbd></dt><dd>Volta para o item anterior.</dd></div>
+    <div><dt><kbd>Enter</kbd></dt><dd>Abre o link ou ativa o botão selecionado.</dd></div>
+    <div><dt><kbd>Espaço</kbd></dt><dd>Ativa botões e caixas de seleção.</dd></div>
+    <div><dt><kbd>Esc</kbd></dt><dd>Fecha uma janela de confirmação ou um menu aberto.</dd></div>
+  </dl>
+</div></section>
+
+<section class="card help-accessibility-section" aria-labelledby="atalhos-ampliacao-titulo"><div class="card-body p-4">
+  <h2 id="atalhos-ampliacao-titulo" class="h5 mb-2">Ampliar o conteúdo</h2>
+  <p class="mb-2">Use os atalhos de zoom do navegador:</p>
+  <ul class="mb-0"><li>Windows e Linux: <kbd>Ctrl</kbd> + <kbd>+</kbd> para ampliar, <kbd>Ctrl</kbd> + <kbd>−</kbd> para reduzir e <kbd>Ctrl</kbd> + <kbd>0</kbd> para restaurar.</li><li>Mac: <kbd>⌘ Command</kbd> + <kbd>+</kbd>, <kbd>−</kbd> ou <kbd>0</kbd>.</li></ul>
+</div></section>
+</div>
+{% endblock %}

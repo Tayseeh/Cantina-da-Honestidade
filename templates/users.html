@@ -1,0 +1,137 @@
+{# Gerenciamento das contas de operadores e administradores. #}
+{% extends 'base.html' %}
+{% block title %}{{ 'Clientes' if is_operator else 'Gerenciar usuários' }} | Confia+{% endblock %}
+{% block content %}
+<div class="users-page-heading mb-4 {{ 'operator-users-page-heading' if is_operator else 'admin-users-page-heading' }}">
+  <div>
+    {% if is_operator %}<p class="text-success fw-semibold small text-uppercase mb-1">Área da cantina</p>{% endif %}
+    <h1 class="{{ 'page-title h2' if is_operator else 'h2' }} mb-2">{{ 'Clientes' if is_operator else 'Usuários' }}</h1>
+    <p class="text-muted mb-0">{{ 'Cadastre novos clientes e consulte ou gerencie as contas já cadastradas.' if is_operator else 'Gerencie os usuários e permissões de acesso ao sistema.' }}</p>
+  </div>
+  {% if not is_operator %}<button class="btn btn-success admin-users-create-trigger" type="button" data-bs-toggle="collapse" data-bs-target="#novo-usuario-equipe" aria-expanded="{{ 'true' if request.args.get('novo') == '1' else 'false' }}" aria-controls="novo-usuario-equipe"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Cadastrar</button>{% endif %}
+</div>
+{% if is_operator %}
+<section class="card staff-create-card mb-4">
+  <div class="staff-create-heading"><div class="d-flex align-items-center gap-3"><span class="icon-circle"><i class="bi bi-person-plus" aria-hidden="true"></i></span><div><h2 class="h5 mb-1">Cadastro de cliente</h2><p class="text-muted mb-0">O formulário fica recolhido até você solicitar um novo cadastro.</p></div></div><button class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#novo-cliente" aria-expanded="{{ 'true' if request.args.get('novo') == '1' else 'false' }}" aria-controls="novo-cliente"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Cadastrar cliente</button></div>
+  <div class="collapse {% if request.args.get('novo') == '1' %}show{% endif %}" id="novo-cliente"><div class="staff-create-form-wrap">
+    <p class="small text-muted mb-3">Preencha os dados necessários. A senha temporária será exibida após a criação da conta.</p>
+    <form method="post" action="{{ url_for('create_customer') }}" class="row g-3" novalidate><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-nome">Nome *</label><input class="form-control" id="novo-cliente-nome" name="nome" maxlength="30" autocomplete="given-name" required></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-sobrenome">Sobrenome *</label><input class="form-control" id="novo-cliente-sobrenome" name="sobrenome" maxlength="30" autocomplete="family-name" required></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-matricula">Matrícula *</label><input class="form-control" id="novo-cliente-matricula" name="matricula" inputmode="numeric" maxlength="14" placeholder="Ex: 20260145003428" required></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-email">E-mail <span class="text-muted">(opcional)</span></label><input class="form-control" id="novo-cliente-email" type="email" name="email" maxlength="50" autocomplete="email"></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-cpf">CPF <span class="text-muted">(opcional)</span></label><input class="form-control" id="novo-cliente-cpf" name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-telefone">Telefone <span class="text-muted">(opcional)</span></label><input class="form-control" id="novo-cliente-telefone" name="telefone" type="tel" maxlength="20" placeholder="(48) 99999-9999"></div>
+      <div class="col-md-6"><label class="form-label" for="novo-cliente-username">Nome de usuário *</label><input class="form-control" id="novo-cliente-username" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras sem acento, números e pontos entre palavras.</div></div>
+      <div class="col-12 d-flex justify-content-end gap-2"><button class="btn btn-outline-secondary btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#novo-cliente">Cancelar</button><button class="btn btn-success" type="submit"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Criar conta do cliente</button></div>
+    </form>
+  </div></div>
+</section>
+{% else %}
+<section class="card staff-create-card mb-4">
+
+  <div class="collapse {% if request.args.get('novo') == '1' %}show{% endif %}" id="novo-usuario-equipe"><div class="staff-create-form-wrap">
+    <div class="staff-create-form-toolbar"><button class="btn btn-outline-secondary btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#novo-usuario-equipe" aria-controls="novo-usuario-equipe">Cancelar</button></div>
+    <p class="small text-muted mb-3">Defina manualmente o nome de usuário. Ao criar a conta, o sistema gera uma senha temporária que deve ser alterada no primeiro acesso.</p>
+    <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="create_staff">
+      <fieldset class="staff-fieldset"><legend>Dados da conta</legend><div class="staff-form-grid">
+        <div><label class="form-label" for="staff-nome">Nome *</label><input id="staff-nome" class="form-control" name="nome" maxlength="30" autocomplete="given-name" required></div>
+        <div><label class="form-label" for="staff-sobrenome">Sobrenome *</label><input id="staff-sobrenome" class="form-control" name="sobrenome" maxlength="30" autocomplete="family-name" required></div>
+        <div><label class="form-label" for="staff-email">E-mail *</label><input id="staff-email" class="form-control" type="email" name="email" maxlength="50" autocomplete="email" required></div>
+        <div><label class="form-label" for="staff-username">Nome de usuário *</label><input id="staff-username" class="form-control" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras sem acento, números e pontos entre palavras.</div></div>
+        <div><label class="form-label" for="staff-perfil">Perfil *</label><select id="staff-perfil" class="form-select" name="novo_perfil" required><option value="">Selecione o perfil</option><option value="operador">Operador</option><option value="admin">Administrador</option></select></div>
+      </div></fieldset>
+      <div class="d-flex justify-content-end gap-2 mt-4"><button class="btn btn-success" type="submit">Criar conta</button></div>
+    </form>
+  </div></div>
+</section>
+{% endif %}
+{% if nova_conta_temporaria %}
+<section class="alert alert-warning" role="status" aria-live="polite">
+  <h2 class="h6">Senha temporária — exiba ao novo usuário agora</h2>
+  <p class="mb-1">Conta: <strong>{{ nova_conta_temporaria.nome }}</strong> ({{ nova_conta_temporaria.perfil|capitalize }})</p>
+  <p class="mb-1">Usuário: <strong class="font-monospace user-select-all">{{ nova_conta_temporaria.username }}</strong></p>
+  <p class="mb-2">Senha temporária: <strong class="font-monospace user-select-all">{{ nova_conta_temporaria.senha }}</strong></p>
+  <p class="small mb-0">Esta senha será exibida apenas nesta tela e deverá ser substituída no primeiro acesso. Entregue-a diretamente ao usuário.</p>
+</section>
+{% endif %}
+{% if senha_redefinida %}
+<section class="alert alert-warning" role="status" aria-live="polite">
+  <h2 class="h6">Nova senha temporária — entregue diretamente ao usuário</h2>
+  <p class="mb-1">Conta: <strong>{{ senha_redefinida.nome }}</strong> ({{ senha_redefinida.perfil|capitalize }})</p>
+  <p class="mb-1">Usuário: <strong class="font-monospace user-select-all">{{ senha_redefinida.username }}</strong></p>
+  <p class="mb-2">Senha temporária: <strong class="font-monospace user-select-all">{{ senha_redefinida.senha }}</strong></p>
+  <p class="small mb-0">A senha anterior foi invalidada. No próximo acesso, a pessoa deverá cadastrar uma nova senha; clientes também precisarão configurar o PIN.</p>
+</section>
+{% endif %}
+{% if not is_operator %}
+<div class="admin-users-search customers-search">
+  <i class="bi bi-search" aria-hidden="true"></i>
+  <input class="form-control" id="busca-usuarios" type="search" placeholder="Buscar usuário por nome, e-mail ou usuário..." autocomplete="off" aria-label="Buscar usuário por nome, e-mail ou nome de usuário">
+</div>
+<div class="admin-users-filter-row d-flex align-items-center gap-3 flex-wrap">
+  <select class="form-select admin-users-filter-select" id="filtro-geral-usuarios" aria-label="Filtrar usuários">
+    <option value="todos" selected>Todos</option>
+    <option value="admin">Administradores</option>
+    <option value="operador">Operadores</option>
+    <option value="ativo">Ativos</option>
+    <option value="inativo">Inativos</option>
+  </select>
+  <span class="small text-muted ms-auto text-nowrap" id="usuarios-visiveis">{{ usuarios|length }} usuário(s)</span>
+  <input type="hidden" id="filtro-perfil" value="todos"><input type="hidden" id="filtro-status" value="todos">
+</div>
+<section class="users-directory card admin-users-directory">
+{% else %}
+<section class="users-directory card">
+  <div class="users-directory-heading"><div><h2 class="h5 mb-1">Clientes cadastrados</h2><p class="text-muted small mb-0">Pesquise, edite e gerencie os clientes em uma única lista.</p></div><span class="small text-muted ms-auto align-self-center text-nowrap" id="usuarios-visiveis">{{ usuarios|length }} usuário(s)</span></div>
+  <div class="users-filter-grid users-filter-grid-table">
+    <div><label class="form-label" for="busca-usuarios">Buscar usuário</label><div class="input-group"><span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span><input class="form-control" id="busca-usuarios" type="search" placeholder="Nome, e-mail ou usuário" autocomplete="off"></div></div>
+    <input type="hidden" id="filtro-perfil" value="cliente"><div><label class="form-label" for="filtro-status">Status</label><select class="form-select" id="filtro-status"><option value="todos">Todos</option><option value="ativo">Ativos</option><option value="inativo">Inativos</option></select></div>
+  </div>
+{% endif %}
+  <div class="users-table-wrap"><table class="table users-table align-middle mb-0"><thead><tr>{% if not is_operator %}<th scope="col" data-sortable>Usuário</th><th scope="col" data-sortable>Nome</th><th scope="col" data-sortable>E-mail</th><th scope="col" data-sortable>Tipo de conta</th>{% else %}<th scope="col" data-sortable>Nome</th><th scope="col" data-sortable>Usuário / matrícula</th>{% endif %}<th scope="col" data-sortable>Status</th><th scope="col" class="text-end">Ações</th></tr></thead><tbody id="lista-usuarios">
+  {% for u in usuarios %}
+    {% set sobrenome_usuario = u.sobrenome or '' %}
+    {% set primeiro_nome = u.nome[:-(sobrenome_usuario|length + 1)] if sobrenome_usuario and u.nome.endswith(' ' ~ sobrenome_usuario) else u.nome %}
+    <tr class="usuario-linha" data-id="{{ u.id }}" data-perfil="{{ u.perfil }}" data-status="{{ 'ativo' if u.ativo else 'inativo' }}" data-busca="{{ (u.nome ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.username or '') ~ ' ' ~ (u.matricula or ''))|lower }}">
+      {% if not is_operator %}<td><div class="admin-user-identity"><span class="admin-user-avatar">{{ (u.nome.split()|first|first ~ (u.nome.split()|last|first if u.nome.split()|length > 1 else ''))|upper }}</span><span class="users-table-login">{{ u.username or '—' }}</span><span class="admin-user-mobile-copy"><strong>{{ u.nome }}</strong><small>{{ u.email or '—' }}</small></span></div></td><td><div class="users-table-name">{{ u.nome }}</div></td><td><span class="users-table-email">{{ u.email or '—' }}</span></td><td><span class="user-role-badge user-role-badge--{{ u.perfil|lower }}">{{ u.perfil|capitalize }}</span></td>{% else %}<td><div class="users-table-name">{{ u.nome }}</div><small class="users-table-email d-block">{{ u.email or '—' }}</small></td><td><span class="users-table-login">{{ u.username or '—' }}</span>{% if u.perfil == 'cliente' %}<small class="d-block text-muted">Matrícula: {{ u.matricula|matricula_br }}</small>{% endif %}</td>{% endif %}
+      <td><span class="status-pill {{ 'is-active' if u.ativo else 'is-inactive' }}">{{ 'Ativo' if u.ativo else 'Inativo' }}</span></td>
+      <td><div class="users-table-actions"><div class="dropdown"><button class="btn btn-sm user-actions-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações para {{ u.nome }}"><i class="bi bi-three-dots" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item" type="button" data-bs-toggle="collapse" data-bs-target="#editar-usuario-{{ u.id }}" aria-expanded="false" aria-controls="editar-usuario-{{ u.id }}"><i class="bi bi-pencil me-2"></i>Editar dados</button></li><li><form method="post" onsubmit="return confirm('Gerar uma nova senha temporária para {{ u.nome|e }}?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="reset_password"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item" type="submit"><i class="bi bi-key me-2"></i>Redefinir senha</button></form></li><li><hr class="dropdown-divider"></li><li><form method="post" onsubmit="return confirm('Tem certeza que deseja {{ 'desativar' if u.ativo else 'ativar' }} esta conta?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'deactivate_user' if u.ativo else 'activate_user' }}"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item {{ 'text-danger' if u.ativo else 'text-success' }}" type="submit"><i class="bi {{ 'bi-person-slash' if u.ativo else 'bi-person-check' }} me-2"></i>{{ 'Desativar' if u.ativo else 'Ativar' }}</button></form></li></ul></div></div></td>
+    </tr>
+    <tr class="users-expanded-row collapse" id="editar-usuario-{{ u.id }}" data-parent-user="{{ u.id }}"><td colspan="{{ 4 if is_operator else 6 }}"><form method="post" class="user-edit-form customer-edit-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="edit_user"><input type="hidden" name="id" value="{{ u.id }}">{% if not is_operator %}
+      <section class="user-edit-section customer-edit-section">
+        <h3>Dados do usuário</h3>
+        <div class="user-edit-fields customer-edit-grid">
+          <div><label class="form-label" for="edit-nome-{{ u.id }}">Nome *</label><input id="edit-nome-{{ u.id }}" class="form-control" name="nome" value="{{ primeiro_nome }}" maxlength="30" data-user-validation="nome" required><div class="invalid-feedback" id="feedback-nome-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-sobrenome-{{ u.id }}">Sobrenome *</label><input id="edit-sobrenome-{{ u.id }}" class="form-control" name="sobrenome" value="{{ sobrenome_usuario }}" maxlength="30" data-user-validation="sobrenome" required><div class="invalid-feedback" id="feedback-sobrenome-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-email-{{ u.id }}">E-mail *</label><input id="edit-email-{{ u.id }}" class="form-control" type="email" name="email" value="{{ u.email or '' }}" maxlength="50" data-user-validation="email" required><div class="invalid-feedback" id="feedback-email-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-cpf-{{ u.id }}">CPF (opcional)</label><input id="edit-cpf-{{ u.id }}" class="form-control" name="cpf" value="{{ u.cpf or '' }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" data-user-validation="cpf"><div class="invalid-feedback" id="feedback-cpf-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-telefone-{{ u.id }}">Telefone (opcional)</label><input id="edit-telefone-{{ u.id }}" class="form-control" type="tel" name="telefone" value="{{ u.telefone or '' }}" inputmode="numeric" maxlength="15" placeholder="(48) 99999-9999" data-user-validation="telefone"><div class="invalid-feedback" id="feedback-telefone-{{ u.id }}"></div></div>
+        </div>
+      </section>
+      <section class="user-edit-section customer-edit-section">
+        <h3>Dados de acesso</h3>
+        <div class="user-edit-fields customer-edit-grid">
+          <div><label class="form-label" for="edit-username-{{ u.id }}">Nome de usuário *</label><input id="edit-username-{{ u.id }}" class="form-control" name="username" value="{{ u.username or '' }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras, números e pontos entre palavras.</div></div>
+          {% if u.perfil in ('operador', 'admin') %}<div><label class="form-label" for="edit-perfil-{{ u.id }}">Perfil *</label><select id="edit-perfil-{{ u.id }}" class="form-select" name="perfil" required><option value="operador" {% if u.perfil == 'operador' %}selected{% endif %}>Operador</option><option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Administrador</option></select></div>{% endif %}
+        </div>
+      </section>
+      {% else %}
+      <div class="user-edit-fields customer-edit-grid">
+        <div><label class="form-label" for="edit-nome-{{ u.id }}">Nome</label><input id="edit-nome-{{ u.id }}" class="form-control" name="nome" value="{{ primeiro_nome }}" maxlength="30" data-user-validation="nome" required><div class="invalid-feedback" id="feedback-nome-{{ u.id }}"></div></div>
+        <div><label class="form-label" for="edit-sobrenome-{{ u.id }}">Sobrenome</label><input id="edit-sobrenome-{{ u.id }}" class="form-control" name="sobrenome" value="{{ sobrenome_usuario }}" maxlength="30" data-user-validation="sobrenome" required><div class="invalid-feedback" id="feedback-sobrenome-{{ u.id }}"></div></div>
+        <div><label class="form-label" for="edit-email-{{ u.id }}">E-mail</label><input id="edit-email-{{ u.id }}" class="form-control" type="email" name="email" value="{{ u.email }}" maxlength="50" data-user-validation="email" required><div class="invalid-feedback" id="feedback-email-{{ u.id }}"></div></div>
+        <div><label class="form-label" for="edit-username-{{ u.id }}">Nome de usuário</label><input id="edit-username-{{ u.id }}" class="form-control" name="username" value="{{ u.username or '' }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras, números e pontos entre palavras.</div></div>
+        {% if u.perfil in ('operador', 'admin') %}<div><label class="form-label" for="edit-perfil-{{ u.id }}">Perfil</label><select id="edit-perfil-{{ u.id }}" class="form-select" name="perfil"><option value="operador" {% if u.perfil == 'operador' %}selected{% endif %}>Operador</option><option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Administrador</option></select></div>{% endif %}
+        {% if u.perfil == 'cliente' %}<div><label class="form-label" for="edit-matricula-{{ u.id }}">Matrícula</label><input id="edit-matricula-{{ u.id }}" class="form-control" name="matricula" value="{{ u.matricula or '' }}" inputmode="numeric" maxlength="14" placeholder="Ex: 20260145003428" pattern="[0-9]{1,14}" data-user-validation="matricula" required><div class="invalid-feedback" id="feedback-matricula-{{ u.id }}"></div></div>{% endif %}
+        <div><label class="form-label" for="edit-cpf-{{ u.id }}">CPF <small>(opcional)</small></label><input id="edit-cpf-{{ u.id }}" class="form-control" name="cpf" value="{{ u.cpf or '' }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" data-user-validation="cpf"><div class="invalid-feedback" id="feedback-cpf-{{ u.id }}"></div></div>
+        <div><label class="form-label" for="edit-telefone-{{ u.id }}">Telefone <small>(opcional)</small></label><input id="edit-telefone-{{ u.id }}" class="form-control" type="tel" name="telefone" value="{{ u.telefone or '' }}" inputmode="numeric" maxlength="15" placeholder="(48) 99999-9999" data-user-validation="telefone"><div class="invalid-feedback" id="feedback-telefone-{{ u.id }}"></div></div>
+        <div><label class="form-label" for="edit-nascimento-{{ u.id }}">Nascimento <small>(opcional)</small></label><input id="edit-nascimento-{{ u.id }}" class="form-control" type="text" name="data_nascimento" value="{{ u.data_nascimento|data_br if u.data_nascimento else '' }}" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" data-min="{{ nascimento_minimo }}" data-max="{{ hoje }}" data-user-validation="nascimento"><div class="invalid-feedback" id="feedback-nascimento-{{ u.id }}"></div></div>
+      </div>
+      {% endif %}<div class="user-edit-footer">
+      <div class="user-edit-submit"><button class="btn btn-success" type="submit">Salvar alterações</button><button class="btn btn-light btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#editar-usuario-{{ u.id }}" aria-controls="editar-usuario-{{ u.id }}">Cancelar</button></div></div>
+    </form></td></tr>
+  {% endfor %}
+  </tbody></table><p id="usuarios-vazio" class="users-table-empty d-none">Nenhuma conta corresponde aos filtros selecionados.</p></div>
+</section>
+{% endblock %}

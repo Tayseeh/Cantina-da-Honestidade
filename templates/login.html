@@ -1,0 +1,28 @@
+{# Formulário de autenticação por usuário/e-mail e senha. #}
+{% extends 'base.html' %}
+{% block title %}Entrar | Confia+{% endblock %}
+{% block content %}
+<div class="auth-wrap auth-login-wrap">
+  <section class="card auth-login-card" aria-labelledby="titulo-login">
+    <div class="auth-login-brand" aria-label="Confia+, Cantina da Honestidade">
+      <span class="brand-mark" aria-hidden="true"><i class="bi bi-apple"></i></span>
+      <span class="brand-wordmark"><span class="brand-name">confia<span class="text-warning">+</span></span><span class="brand-subtitle">Cantina da Honestidade</span></span>
+    </div>
+    <h1 id="titulo-login">Acesse sua conta</h1>
+    <p class="auth-login-description">Acesse seus produtos, saldo e histórico de compras.</p>
+    <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label" for="identificador">Nome de usuário ou e-mail</label>
+        <input id="identificador" class="form-control" name="identificador" autocomplete="username" required aria-describedby="login-info">
+        <div id="login-info" class="form-text">Informe o nome de usuário ou o e-mail cadastrado.</div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label" for="senha">Senha</label>
+        <input id="senha" class="form-control" type="password" name="senha" autocomplete="current-password" required>
+      </div>
+      <button class="btn btn-success w-100" type="submit">Entrar</button>
+    </form>
+    <p class="auth-first-access mb-0">É seu primeiro acesso? Peça ao operador da cantina os dados de acesso.</p>
+  </section>
+</div>
+{% endblock %}
