@@ -71,14 +71,13 @@ def initialize_database():
             valor DECIMAL(12,2) NOT NULL, descricao VARCHAR(255) NULL,
             idempotency_key VARCHAR(100) NULL UNIQUE,
             status VARCHAR(30) NOT NULL DEFAULT 'confirmada',
-            movimentacao_origem_id BIGINT UNSIGNED NULL, motivo VARCHAR(500) NOT NULL DEFAULT '',
+            motivo VARCHAR(500) NOT NULL DEFAULT '',
             criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             KEY idx_movimentacoes_usuario_data (usuario_id, criado_em, id),
             KEY idx_movimentacoes_data (criado_em, id),
             CONSTRAINT fk_mov_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
             CONSTRAINT fk_mov_responsavel FOREIGN KEY (responsavel_id) REFERENCES usuarios(id),
-            CONSTRAINT fk_mov_compra FOREIGN KEY (compra_id) REFERENCES compras(id),
-            CONSTRAINT fk_mov_origem FOREIGN KEY (movimentacao_origem_id) REFERENCES movimentacoes(id)
+            CONSTRAINT fk_mov_compra FOREIGN KEY (compra_id) REFERENCES compras(id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci""",
         """CREATE TABLE IF NOT EXISTS notificacoes (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
