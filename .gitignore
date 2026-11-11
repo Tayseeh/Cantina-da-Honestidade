@@ -1,0 +1,33 @@
+# Ambiente virtual e cache Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Bancos locais e backups: nunca publicar dados de usuários
+*.db
+*.sqlite
+*.sqlite3
+*-backup*
+*.bak
+backups/
+
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+instance/
+
+# Fotos de perfil enviadas por usuários são privadas/localmente geradas
+static/uploads/perfis/*
+!static/uploads/perfis/.gitkeep
+
+# Ferramentas e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
