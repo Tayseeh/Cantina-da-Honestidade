@@ -1,0 +1,98 @@
+{# Painel inicial do operador com atalhos para as rotinas operacionais. #}
+{% extends 'base.html' %}
+{% block title %}Início do operador | Confia+{% endblock %}
+{% block content %}
+
+<section class="operator-home-mobile d-lg-none operator-home-refresh" aria-label="Painel do operador">
+  <header class="operator-home-mobile-brand">
+    <span class="operator-home-mobile-mark"><i class="bi bi-apple" aria-hidden="true"></i></span>
+    <span class="operator-home-mobile-wordmark"><strong>confia<span>+</span></strong><small>Cantina da Honestidade</small></span>
+  </header>
+
+  <header class="operator-welcome-panel operator-mobile-welcome">
+    <div class="operator-welcome-copy">
+      <span class="operator-welcome-eyebrow"><i class="bi bi-sun" aria-hidden="true"></i> PAINEL DA CANTINA</span>
+      <h1>Olá, {{ usuario_logado.nome.split()[0] }}!</h1>
+      <p>Veja como está a cantina e acesse rapidamente as tarefas do dia.</p>
+    </div>
+    <div class="operator-welcome-mark" aria-hidden="true"><i class="bi bi-shop"></i></div>
+  </header>
+
+  <section class="operator-dashboard-section operator-mobile-summary" aria-labelledby="operator-mobile-summary-title">
+    <div class="operator-section-heading">
+      <div><h2 id="operator-mobile-summary-title">Visão geral</h2><p>Resumo atualizado da operação</p></div>
+    </div>
+    <div class="operator-stats operator-stats-tiles" aria-label="Resumo da cantina">
+      <article class="operator-stat operator-stat-products">
+        <span class="operator-stat-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+        <div><span>Produtos cadastrados</span><strong>{{ resumo.produtos }}</strong><small>Itens ativos no catálogo</small></div>
+      </article>
+      <article class="operator-stat operator-stat-warning">
+        <span class="operator-stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        <div><span>Estoque baixo</span><strong>{{ resumo.estoque_baixo }}</strong><small>Precisam de atenção</small></div>
+      </article>
+      <article class="operator-stat operator-stat-empty">
+        <span class="operator-stat-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+        <div><span>Sem estoque</span><strong>{{ resumo.sem_estoque }}</strong><small>Indisponíveis para compra</small></div>
+      </article>
+      <article class="operator-stat operator-stat-customers">
+        <span class="operator-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+        <div><span>Clientes ativos</span><strong>{{ resumo.clientes }}</strong><small>Contas habilitadas</small></div>
+      </article>
+    </div>
+  </section>
+</section>
+
+<section class="operator-home operator-dashboard-clean operator-home-refresh d-none d-lg-block" aria-labelledby="operator-home-title">
+  <header class="operator-welcome-panel">
+    <div class="operator-welcome-copy">
+      <span class="operator-welcome-eyebrow"><i class="bi bi-sun" aria-hidden="true"></i> OPERADOR DA CANTINA</span>
+      <h1 id="operator-home-title">Olá, {{ usuario_logado.nome.split()[0] }}!</h1>
+      <p>Veja como está a cantina e acesse rapidamente as tarefas do dia.</p>
+    </div>
+    <div class="operator-welcome-mark" aria-hidden="true"><i class="bi bi-shop"></i></div>
+  </header>
+
+  <section class="operator-dashboard-section" aria-labelledby="operator-summary-title">
+    <div class="operator-section-heading">
+      <div><h2 id="operator-summary-title">Visão geral</h2><p>Resumo atualizado da operação</p></div>
+    </div>
+    <div class="operator-stats operator-stats-tiles" aria-label="Resumo da cantina">
+      <article class="operator-stat operator-stat-products">
+        <span class="operator-stat-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+        <div><span>Produtos cadastrados</span><strong>{{ resumo.produtos }}</strong><small>Itens ativos cadastrados</small></div>
+      </article>
+      <article class="operator-stat operator-stat-warning">
+        <span class="operator-stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        <div><span>Estoque baixo</span><strong>{{ resumo.estoque_baixo }}</strong><small>Precisam de atenção</small></div>
+      </article>
+      <article class="operator-stat operator-stat-empty">
+        <span class="operator-stat-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+        <div><span>Sem estoque</span><strong>{{ resumo.sem_estoque }}</strong><small>Indisponíveis para compra</small></div>
+      </article>
+      <article class="operator-stat operator-stat-customers">
+        <span class="operator-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+        <div><span>Clientes ativos</span><strong>{{ resumo.clientes }}</strong><small>Contas habilitadas</small></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="operator-dashboard-section operator-quick-section" aria-labelledby="operator-quick-title">
+    <div class="operator-section-heading">
+      <div><h2 id="operator-quick-title">Acesso rápido</h2><p>Atalhos para as atividades mais utilizadas</p></div>
+    </div>
+    <div class="operator-quick-grid">
+      <a class="operator-quick-card operator-quick-primary" href="{{ url_for('topups') }}">
+        <span class="operator-quick-icon"><i class="bi bi-wallet2" aria-hidden="true"></i></span>
+        <span class="operator-quick-text"><strong>Registrar recarga</strong><small>Adicionar saldo à carteira de um cliente</small></span>
+        <i class="bi bi-arrow-up-right operator-quick-arrow" aria-hidden="true"></i>
+      </a>
+      <a class="operator-quick-card" href="{{ url_for('products') }}">
+        <span class="operator-quick-icon"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+        <span class="operator-quick-text"><strong>Gerenciar estoque</strong><small>Consultar produtos e atualizar quantidades</small></span>
+        <i class="bi bi-arrow-up-right operator-quick-arrow" aria-hidden="true"></i>
+      </a>
+    </div>
+  </section>
+</section>
+{% endblock %}

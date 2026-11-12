@@ -1,0 +1,105 @@
+{# Cadastro, edição, ativação e consulta de produtos e respectivos preços/estoque. #}
+{% extends 'base.html' %}
+{% block title %}Gerenciar produtos | Confia+{% endblock %}
+{% block content %}
+<section class="products-page-shell operator-mobile-list-page">
+<div class="products-page-heading customers-page-heading">
+  <div>
+    <h1 class="page-title mb-1">Produtos</h1>
+    <p class="text-muted mb-0">Gerencie os produtos da cantina.</p>
+  </div>
+  <button class="btn btn-success products-add-button customers-add-button" type="button" data-bs-toggle="collapse" data-bs-target="#formulario-novo-produto" aria-expanded="false" aria-controls="formulario-novo-produto">
+    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Cadastrar
+  </button>
+</div>
+
+<div class="collapse mb-4" id="formulario-novo-produto"><section class="card"><div class="card-body p-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3"><div><h2 class="h5 fw-bold mb-1"><i class="bi bi-plus-circle text-success me-2" aria-hidden="true"></i>Novo produto</h2><p class="text-muted small mb-0">Preencha os dados do item para disponibilizá-lo no catálogo.</p></div><button class="btn btn-outline-secondary btn-sm btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#formulario-novo-produto" aria-controls="formulario-novo-produto">Cancelar</button></div>
+  <form method="post" enctype="multipart/form-data" class="product-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="product-field-name"><label class="form-label" for="novo-nome">Nome do produto</label><input id="novo-nome" class="form-control" name="nome" maxlength="80" data-product-name required></div>
+    <div class="product-field-description"><label class="form-label" for="novo-descricao">Descrição</label><textarea id="novo-descricao" class="form-control product-description-input" name="descricao" maxlength="250" rows="3" data-product-description></textarea></div>
+    <div class="product-field-photo"><label class="form-label" for="novo-foto">Foto do produto</label><input id="novo-foto" class="form-control" type="file" name="foto" accept="image/jpeg,image/png,image/webp"></div>
+    <div class="product-field-purchase"><label class="form-label" for="novo-compra">Preço de compra (R$)</label><input id="novo-compra" class="form-control" name="preco_compra" inputmode="decimal" placeholder="0,00" maxlength="12" data-money required></div>
+    <div class="product-field-sale"><label class="form-label" for="novo-venda">Preço de venda (R$)</label><input id="novo-venda" class="form-control" name="preco_venda" inputmode="decimal" placeholder="0,00" maxlength="12" data-money required><div class="form-text" data-price-suggestion aria-live="polite">Informe o preço de compra para ver uma sugestão (acréscimo padrão de 50%).</div><button class="btn btn-outline-success btn-sm mt-2" type="button" data-apply-suggestion>Preço sugerido</button></div>
+    <div class="product-field-stock"><label class="form-label" for="novo-estoque">Estoque</label><input id="novo-estoque" class="form-control" name="estoque" inputmode="numeric" maxlength="6" data-stock required></div>
+    <div class="product-field-low-stock stock-threshold-field">
+      <label class="form-label" for="novo-estoque-baixo">Limite para alerta de estoque baixo</label>
+      <input id="novo-estoque-baixo" class="form-control" name="estoque_baixo" type="number" min="1" max="999999" value="5" inputmode="numeric" required>
+      <div class="form-text stock-threshold-help">O operador receberá um aviso quando o estoque atingir essa quantidade ou menos.</div>
+    </div>
+    <div class="product-form-submit"><button class="btn btn-success" type="submit">Cadastrar</button></div>
+  </form>
+</div></section></div>
+
+<section class="products-management" aria-label="Lista de produtos">
+  <div class="product-search-bar mb-3">
+    <label class="visually-hidden" for="buscar-produto">Buscar produto</label>
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <input id="buscar-produto" class="form-control" type="search" placeholder="Buscar produto..." autocomplete="off">
+  </div>
+  <div class="product-mobile-filter mb-3">
+    <label class="visually-hidden" for="filtro-produtos">Filtrar produtos</label>
+    <select id="filtro-produtos" class="form-select product-filter-select" aria-label="Filtrar produtos">
+      <option value="todos">Todos</option>
+      <option value="disponiveis">Disponíveis</option>
+      <option value="baixo">Estoque baixo</option>
+      <option value="sem_estoque">Sem estoque</option>
+      <option value="inativo">Desativados</option>
+    </select>
+  </div>
+  <div class="product-filter-chips mb-4" role="group" aria-label="Filtros de produtos">
+    {% for value, label in [('todos','Todos'),('disponiveis','Disponíveis'),('baixo','Estoque baixo'),('sem_estoque','Sem estoque'),('inativo','Desativados')] %}
+    <button type="button" class="product-filter-chip{% if value == 'todos' %} active{% endif %}" data-product-filter="{{ value }}" aria-pressed="{{ 'true' if value == 'todos' else 'false' }}">{{ label }}</button>
+    {% endfor %}
+    <span class="small text-muted ms-auto align-self-center text-nowrap" id="product-search-count">{{ produtos|length }} produto(s)</span>
+  </div>
+  <div class="products-table-wrap">
+    <table class="products-table">
+      <thead><tr><th scope="col" data-sortable>Produto</th><th scope="col" data-sortable>Preço</th><th scope="col" data-sortable>Estoque</th><th scope="col" data-sortable>Status</th><th scope="col"><span class="visually-hidden">Ações</span></th></tr></thead>
+      <tbody id="product-list">
+      {% for p in produtos %}
+        <tr class="product-table-row" data-product-card data-status="{{ 'ativo' if p.ativo else 'inativo' }}" data-stock="{{ p.estoque }}" data-low-stock="{{ p.estoque_baixo|default(5)|int }}" data-search-text="{{ (p.nome ~ ' ' ~ (p.descricao or ''))|lower }}">
+          <td class="product-table-main">
+            {% if p.foto %}<img class="product-table-image" src="{{ url_for('static', filename=p.foto) }}" alt="Foto de {{ p.nome }}">{% else %}<span class="product-table-image product-admin-placeholder"><i class="bi bi-image" aria-hidden="true"></i></span>{% endif %}
+            <span class="product-table-name">{{ p.nome }}</span>
+          </td>
+          <td class="product-table-price">R$ {{ '%.2f'|format(p.preco)|replace('.', ',') }}</td>
+          <td><span class="product-stock-pill {% if p.estoque|int == 0 %}empty{% elif p.estoque|int <= p.estoque_baixo|default(5)|int %}low{% else %}normal{% endif %}">{{ p.estoque }} un</span></td>
+          <td><span class="product-status-pill {% if not p.ativo %}inactive{% elif p.estoque|int == 0 %}empty{% elif p.estoque|int <= p.estoque_baixo|default(5)|int %}low{% else %}available{% endif %}">{% if not p.ativo %}Desativado{% elif p.estoque|int == 0 %}Sem estoque{% elif p.estoque|int <= p.estoque_baixo|default(5)|int %}Estoque baixo{% else %}Disponível{% endif %}</span></td>
+          <td class="product-table-actions">
+            <div class="dropdown">
+              <button class="product-actions-trigger" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações para {{ p.nome }}"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><button class="dropdown-item" type="button" data-bs-toggle="collapse" data-bs-target="#editar-produto-{{ p.id }}" aria-expanded="false" aria-controls="editar-produto-{{ p.id }}"><i class="bi bi-pencil me-2"></i>Editar</button></li>
+                <li><form method="post" action="{{ url_for('edit_product', product_id=p.id) }}" onsubmit="return confirm('Tem certeza que deseja {{ 'desativar' if p.ativo else 'ativar' }} este produto?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'deactivate_product' if p.ativo else 'activate_product' }}"><button class="dropdown-item" type="submit"><i class="bi {{ 'bi-toggle-off' if p.ativo else 'bi-toggle-on' }} me-2"></i>{{ 'Desativar' if p.ativo else 'Ativar' }}</button></form></li>
+                <li><a class="dropdown-item" href="{{ url_for('qr_add', product_id=p.id, _external=True) }}" target="_blank" rel="noopener"><i class="bi bi-qr-code me-2"></i>Link de adição</a></li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+        <tr class="product-edit-row"><td colspan="5"><div class="collapse" id="editar-produto-{{ p.id }}"><div class="product-edit-panel">
+          <h3 class="h6 fw-bold mb-3">Editar produto — {{ p.nome }}</h3>
+          <form method="post" action="{{ url_for('edit_product', product_id=p.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="product-admin-fields">
+              <div class="product-edit-name"><label class="form-label" for="nome-{{ p.id }}">Nome</label><input id="nome-{{ p.id }}" class="form-control" name="nome" value="{{ p.nome }}" maxlength="80" data-product-name required></div>
+              <div class="product-edit-description"><label class="form-label" for="descricao-{{ p.id }}">Descrição</label><textarea id="descricao-{{ p.id }}" class="form-control product-description-input" name="descricao" maxlength="250" rows="3" data-product-description>{{ p.descricao }}</textarea></div>
+              <div class="product-edit-photo"><label class="form-label" for="foto-{{ p.id }}">{% if p.foto %}Trocar foto{% else %}Adicionar foto{% endif %}</label><input id="foto-{{ p.id }}" class="form-control" type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-product-photo>{% if p.foto %}<button class="btn btn-outline-danger btn-sm mt-2" type="submit" name="remover_foto" value="1" data-remove-photo><i class="bi bi-trash3 me-1"></i>Remover</button>{% else %}<small class="form-text">Nenhuma foto cadastrada.</small>{% endif %}</div>
+
+              <div class="product-edit-purchase"><label class="form-label" for="compra-{{ p.id }}">Preço de compra (R$)</label><input id="compra-{{ p.id }}" class="form-control" name="preco_compra" value="{{ '%.2f'|format(p.preco_compra)|replace('.', ',') if p.preco_compra else '' }}" inputmode="decimal" placeholder="0,00" maxlength="12" data-money required></div>
+              <div class="product-edit-sale"><label class="form-label" for="venda-{{ p.id }}">Preço de venda (R$)</label><input id="venda-{{ p.id }}" class="form-control" name="preco_venda" value="{{ '%.2f'|format(p.preco)|replace('.', ',') }}" inputmode="decimal" maxlength="12" data-money required><div class="form-text" data-price-suggestion aria-live="polite">A sugestão será calculada a partir do novo custo; o preço atual não será alterado automaticamente.</div><button class="btn btn-outline-success btn-sm mt-2" type="button" data-apply-suggestion>Preço sugerido</button></div>
+              <div class="product-edit-stock"><label class="form-label" for="estoque-{{ p.id }}">Estoque</label><input id="estoque-{{ p.id }}" class="form-control" name="estoque" value="{{ p.estoque }}" inputmode="numeric" maxlength="6" data-stock required></div>
+              <div class="product-edit-low-stock stock-threshold-field"><label class="form-label" for="estoque-baixo-{{ p.id }}">Limite para alerta de estoque baixo</label><input id="estoque-baixo-{{ p.id }}" class="form-control" name="estoque_baixo" type="number" min="1" max="999999" value="{{ p.estoque_baixo|default(5) }}" inputmode="numeric" required><div class="form-text stock-threshold-help">O operador receberá um aviso quando o estoque atingir essa quantidade ou menos.</div></div>
+            </div>
+            <div class="product-admin-footer"><button class="btn btn-success" type="submit">Salvar alterações</button><button class="btn btn-light btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#editar-produto-{{ p.id }}">Cancelar</button></div>
+          </form>
+        </div></div></td></tr>
+      {% else %}
+        <tr><td colspan="5" class="products-empty-state">Ainda não há produtos cadastrados.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div id="product-search-empty" class="products-empty-state d-none"><i class="bi bi-search me-2"></i>Nenhum produto encontrado para essa busca.</div>
+  </div>
+</section>
+</section>
+{% endblock %}

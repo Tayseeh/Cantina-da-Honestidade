@@ -1,0 +1,92 @@
+{# Consulta e registro de recargas nas carteiras dos clientes. #}
+{% extends 'base.html' %}
+{% block title %}Registrar recarga | Confia+{% endblock %}
+{% block content %}
+<div class="topups-page">
+  <div class="topups-heading">
+    <div>
+      <h1 class="page-title h2 mb-1">Recargas</h1>
+      <p class="text-muted mb-0">Adicione saldo à carteira dos clientes.</p>
+    </div>
+  </div>
+
+  <div class="row g-4 align-items-stretch topup-layout">
+    <section class="col-lg-6" aria-labelledby="form-recarga-titulo">
+      <div class="card topup-panel topup-form-panel h-100">
+        <div class="card-body p-4">
+          <h2 id="form-recarga-titulo" class="h5 topups-card-title mb-4">Nova recarga</h2>
+
+          <label class="form-label" for="buscar-cliente-recarga">Cliente <span class="text-danger">*</span></label>
+          <div class="input-group topups-search mb-2">
+            <span class="input-group-text"><i class="bi bi-search text-success"></i></span>
+            <input class="form-control" id="buscar-cliente-recarga" type="search" aria-label="Buscar cliente para recarga" placeholder="Buscar por nome ou matrícula..." autocomplete="off">
+          </div>
+          <p class="small text-muted mb-2" id="dica-busca-cliente">Digite o nome ou a matrícula para localizar um cliente.</p>
+          <div class="list-group topup-customer-list mb-3 d-none" id="lista-clientes-recarga">
+            {% for cliente in clientes %}
+            <button type="button" class="list-group-item list-group-item-action text-start cliente-recarga d-none" data-matricula="{{ cliente.matricula }}" data-nome="{{ cliente.nome }}" data-busca="{{ (cliente.nome ~ ' ' ~ (cliente.matricula or ''))|lower }}">
+              <span class="d-flex justify-content-between align-items-center gap-3"><strong>{{ cliente.nome }}</strong><span class="small text-success selecionar-cliente">Selecionar</span></span>
+              <span class="d-block small text-muted mt-1 matricula-cliente-recarga">Matrícula: {{ cliente.matricula or '—' }}</span>
+            </button>
+            {% else %}
+            <div class="text-muted small py-3 d-none" id="sem-clientes-recarga">Não há clientes ativos cadastrados.</div>
+            {% endfor %}
+            <div class="text-muted small py-3 d-none" id="sem-resultados-clientes">Nenhum cliente encontrado para essa busca.</div>
+          </div>
+
+          <div id="cliente-selecionado" class="selected-customer mb-4" aria-live="polite">
+            <i class="bi bi-person-check"></i><span>Nenhum cliente selecionado.</span>
+          </div>
+
+          <form method="post" id="form-recarga">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="idempotency_key" value="{{ recarga_idempotency_key }}">
+            <input type="hidden" id="matricula-recarga" name="matricula" required>
+            <label class="form-label" for="valor-recarga">Valor da recarga <span class="text-danger">*</span></label>
+            <div class="input-group topups-amount mb-4">
+              <span class="input-group-text">R$</span>
+              <input class="form-control" id="valor-recarga" name="valor" inputmode="decimal" placeholder="0,00" required>
+            </div>
+            <div class="topups-form-actions">
+              <button class="btn btn-success" id="confirmar-recarga" type="button" disabled><i class="bi bi-wallet2 me-1"></i> Realizar recarga</button>
+            </div>
+            <div class="modal fade" id="confirmar-recarga-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="confirmar-recarga-titulo" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
+                <div class="modal-header"><div><p class="section-kicker mb-1">CONFIRMAÇÃO</p><h2 class="modal-title h5" id="confirmar-recarga-titulo">Registrar esta recarga?</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+                <div class="modal-body"><p class="mb-3">Confira os dados antes de confirmar:</p><dl class="row mb-3"><dt class="col-5">Cliente</dt><dd class="col-7" id="confirmacao-cliente"></dd><dt class="col-5">Matrícula</dt><dd class="col-7" id="confirmacao-matricula"></dd><dt class="col-5">Valor</dt><dd class="col-7 fw-bold text-success" id="confirmacao-valor"></dd></dl><div class="form-check border rounded-3 p-3 ps-5"><input class="form-check-input" type="checkbox" id="confirmacao-recebimento" name="confirmacao_recebimento" value="sim"><label class="form-check-label fw-semibold" for="confirmacao-recebimento">Confirmo que recebi o dinheiro físico e conferi o valor.</label></div></div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Voltar</button><button class="btn btn-success" type="submit"><i class="bi bi-check-lg me-1"></i> Confirmar recarga</button></div>
+              </div></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="col-lg-6" aria-labelledby="historico-recargas-titulo">
+      <div class="card topup-panel topups-history-panel h-100">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 id="historico-recargas-titulo" class="h5 topups-card-title mb-0">Últimas recargas</h2>
+            <span class="topups-count">{{ recargas|length }} registros</span>
+          </div>
+          <p class="text-muted small mb-3">Histórico das recargas registradas.</p>
+          <div class="table-responsive topups-history-table">
+            <table class="table align-middle mb-0">
+              <thead><tr><th>Data</th><th>Cliente</th><th class="text-end">Valor</th></tr></thead>
+              <tbody>
+              {% for r in recargas %}
+              <tr>
+                <td class="text-nowrap">{{ r.criado_em|data_hora_br }}</td>
+                <td>{{ r.cliente }}<small class="d-block text-muted">{{ r.matricula or 'Sem matrícula' }}</small></td>
+                <td class="text-end text-nowrap fw-bold text-success">R$ {{ '%.2f'|format(r.valor) }}</td>
+              </tr>
+              {% else %}<tr><td colspan="3" class="text-center text-muted py-4">Ainda não há recargas registradas.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

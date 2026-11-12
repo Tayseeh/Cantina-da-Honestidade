@@ -1,0 +1,67 @@
+{# Painel inicial do administrador e atalhos das funções administrativas. #}
+{% extends 'base.html' %}
+{% block title %}Painel administrativo | Confia+{% endblock %}
+{% block content %}
+<section class="admin-home admin-home-clean" aria-labelledby="admin-home-title">
+  <header class="operator-welcome-panel">
+    <div class="operator-welcome-copy">
+      <span class="operator-welcome-eyebrow"><i class="bi bi-sun" aria-hidden="true"></i> ADMINISTRADOR DA CANTINA</span>
+      <h1 id="admin-home-title">Olá, Administrador!</h1>
+      <p>Acompanhe a equipe, os clientes cadastrados e as movimentações da cantina.</p>
+    </div>
+    <div class="operator-welcome-mark" aria-hidden="true"><i class="bi bi-shop"></i></div>
+  </header>
+
+  <section class="admin-stats-grid admin-stats-grid-primary mb-4" aria-label="Indicadores de usuários">
+    <article class="admin-stat-card">
+      <span class="admin-stat-icon is-purple"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+      <div><p>Administradores ativos</p><strong>{{ resumo.administradores }}</strong></div>
+    </article>
+    <article class="admin-stat-card">
+      <span class="admin-stat-icon is-blue"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+      <div><p>Operadores ativos</p><strong>{{ resumo.operadores }}</strong></div>
+    </article>
+    <article class="admin-stat-card">
+      <span class="admin-stat-icon is-green"><i class="bi bi-people" aria-hidden="true"></i></span>
+      <div><p>Clientes cadastrados</p><strong>{{ resumo.clientes_cadastrados }}</strong></div>
+    </article>
+  </section>
+
+  <section class="admin-home-summary mt-4" aria-labelledby="admin-summary-title">
+    <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+      <div>
+        <p class="admin-home-eyebrow admin-home-eyebrow-dark mb-1">RESUMO</p>
+        <h2 id="admin-summary-title" class="h4 mb-1">Resumo dos últimos 7 dias</h2>
+        <p class="text-muted mb-0 small">Dados com base nos registros do sistema.</p>
+      </div>
+      <a class="btn btn-outline-success" href="{{ url_for('report') }}"><i class="bi bi-bar-chart-line me-1" aria-hidden="true"></i>Ver relatórios</a>
+    </div>
+    <div class="admin-stats-grid admin-stats-grid-secondary" aria-label="Resumo de atividade recente">
+      <article class="admin-stat-card">
+        <span class="admin-stat-icon is-blue"><i class="bi bi-cart-check" aria-hidden="true"></i></span>
+        <div><p>Compras nos últimos 7 dias</p><strong>{{ resumo.compras_semana }}</strong></div>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-icon is-purple"><i class="bi bi-currency-dollar" aria-hidden="true"></i></span>
+        <div><p>Valor vendido nos últimos 7 dias</p><strong>R$ {{ '%.2f'|format(resumo.vendas_semana|float) }}</strong></div>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-icon is-green"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+        <div><p>Clientes compradores</p><strong>{{ resumo.clientes_compradores_semana }}</strong></div>
+      </article>
+      <article class="admin-stat-card">
+        <span class="admin-stat-icon is-orange"><i class="bi bi-wallet2" aria-hidden="true"></i></span>
+        <div><p>Recargas nos últimos 7 dias</p><strong>R$ {{ '%.2f'|format(resumo.recargas_semana|float) }}</strong></div>
+      </article>
+      <article class="admin-stat-card has-warning">
+        <span class="admin-stat-icon is-orange"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        <div><p>Clientes com saldo negativo</p><strong>{{ resumo.clientes_saldo_negativo }}</strong></div>
+      </article>
+      <article class="admin-stat-card has-warning">
+        <span class="admin-stat-icon is-orange"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+        <div><p>Total de saldo negativo</p><strong>R$ {{ '%.2f'|format(resumo.valor_saldo_negativo|float) }}</strong></div>
+      </article>
+    </div>
+  </section>
+</section>
+{% endblock %}

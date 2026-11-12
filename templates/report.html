@@ -1,0 +1,121 @@
+{# Apresentação dos indicadores e relatórios administrativos. #}
+{% extends 'base.html' %}
+{% block title %}Relatórios | Confia+{% endblock %}
+{% block content %}
+<section class="admin-report-page" aria-label="Relatórios da cantina">
+  <header class="mb-4">
+    <h1 class="h2 mb-1">Relatórios</h1>
+    <p class="text-muted mb-0">Consulte as movimentações da cantina.</p>
+  </header>
+
+  <form class="card border-0 shadow-sm mb-3" method="get" aria-label="Filtrar relatórios por período">
+    <div class="card-body row g-3 align-items-end">
+      <div class="col-sm-6 col-lg-4">
+        <label class="form-label" for="data-inicio">Data inicial</label>
+        <input class="form-control" id="data-inicio" type="date" name="inicio" value="{{ request.args.get('inicio', '') }}">
+      </div>
+      <div class="col-sm-6 col-lg-4">
+        <label class="form-label" for="data-fim">Data final</label>
+        <input class="form-control" id="data-fim" type="date" name="fim" value="{{ request.args.get('fim', '') }}">
+      </div>
+      <div class="col-lg-4 d-flex gap-2">
+        <button class="btn btn-success flex-grow-1" type="submit">Consultar</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('report') }}">Limpar</a>
+      </div>
+    </div>
+  </form>
+
+  <section class="mb-3" aria-label="Resumo do período">
+    <h2 class="h5 mb-1">Resumo do período</h2>
+    <p class="text-muted small mb-3">Indicadores conforme o período selecionado.</p>
+    <div class="row g-3">
+      <div class="col-6 col-xl-3"><article class="card h-100 border-0 shadow-sm"><div class="card-body">
+        <span class="d-inline-flex rounded-3 p-2 bg-success-subtle text-success mb-2"><i class="bi bi-cart-check fs-5" aria-hidden="true"></i></span>
+        <p class="text-muted small mb-1">Total de compras</p><p class="h4 mb-0">R$ {{ '%.2f'|format(resumo.vendas_valor) }}</p>
+      </div></article></div>
+      <div class="col-6 col-xl-3"><article class="card h-100 border-0 shadow-sm"><div class="card-body">
+        <span class="d-inline-flex rounded-3 p-2 bg-warning-subtle text-warning mb-2"><i class="bi bi-wallet2 fs-5" aria-hidden="true"></i></span>
+        <p class="text-muted small mb-1">Total de recargas</p><p class="h4 mb-0">R$ {{ '%.2f'|format(resumo.recargas_valor) }}</p>
+      </div></article></div>
+      <div class="col-6 col-xl-3"><article class="card h-100 border-0 shadow-sm"><div class="card-body">
+        <span class="d-inline-flex rounded-3 p-2 bg-danger-subtle text-danger mb-2"><i class="bi bi-exclamation-triangle fs-5" aria-hidden="true"></i></span>
+        <p class="text-muted small mb-1">Clientes com saldo negativo</p><p class="h4 mb-0">{{ resumo.clientes_negativos_quantidade }}</p>
+      </div></article></div>
+      <div class="col-6 col-xl-3"><article class="card h-100 border-0 shadow-sm"><div class="card-body">
+        <span class="d-inline-flex rounded-3 p-2 bg-warning-subtle text-warning mb-2"><i class="bi bi-cash-coin fs-5" aria-hidden="true"></i></span>
+        <p class="text-muted small mb-1">Valor total em aberto</p><p class="h4 mb-0">R$ {{ '%.2f'|format(resumo.clientes_negativos_valor) }}</p>
+      </div></article></div>
+    </div>
+  </section>
+
+  <section class="row g-3 mb-3" aria-label="Pendências e produtos mais vendidos">
+    <div class="col-lg-5">
+      <article class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 mb-1">Clientes com saldo negativo</h2>
+          <p class="text-muted small mb-3">Clientes com saldo devedor na carteira.</p>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th scope="col">Cliente</th><th scope="col" class="text-end">Saldo devedor</th></tr></thead>
+              <tbody>
+                {% for cliente in clientes_negativos %}
+                <tr><td>{{ cliente.nome }}</td><td class="text-end text-danger fw-semibold">-R$ {{ '%.2f'|format(cliente.saldo|abs) }}</td></tr>
+                {% else %}
+                <tr><td colspan="2" class="text-center text-muted py-3">Nenhum cliente com saldo negativo.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+    </div>
+    <div class="col-lg-7">
+      <article class="card h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <h2 class="h5 mb-1">Produtos mais vendidos</h2>
+          <p class="text-muted small mb-3">Ranking por quantidade no período selecionado.</p>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th scope="col">#</th><th scope="col">Produto</th><th scope="col" class="text-end">Quantidade</th><th scope="col" class="text-end">Valor vendido</th></tr></thead>
+              <tbody>
+                {% for produto in produtos_mais_vendidos %}
+                <tr><td>{{ loop.index }}</td><td>{{ produto.produto }}</td><td class="text-end">{{ produto.quantidade }}</td><td class="text-end">R$ {{ '%.2f'|format(produto.valor_vendido or 0) }}</td></tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">Nenhuma venda encontrada no período.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="card border-0 shadow-sm" aria-labelledby="movimentacoes-titulo">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div><h2 id="movimentacoes-titulo" class="h5 mb-1">Movimentações do período</h2><p class="text-muted small mb-0">Lista de compras e recargas no período selecionado.</p></div>
+        <span class="badge text-bg-light">{{ movimentacoes|length }} registros</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <caption class="visually-hidden">Histórico de compras e recargas</caption>
+          <thead><tr><th scope="col">Data e hora</th><th scope="col">Cliente</th><th scope="col">Operação</th><th scope="col">Produto</th><th scope="col" class="text-end">Valor</th></tr></thead>
+          <tbody>
+            {% for m in movimentacoes %}
+            <tr>
+              <td>{{ m.criado_em|data_hora_br }}</td><td>{{ m.cliente }}</td>
+              <td><span class="badge {{ 'text-bg-success' if m.operacao == 'recarga' else 'text-bg-primary' }}">{{ m.operacao|replace('_', ' ')|capitalize }}</span></td>
+              <td>{{ m.produto or '—' }}</td><td class="text-end">R$ {{ '%.2f'|format(m.valor) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">Nenhuma movimentação encontrada no período.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if movimentacoes|length == 500 %}<p class="small text-muted mt-3 mb-0">São exibidos até 500 registros. Use as datas para filtrar o período.</p>{% endif %}
+    </div>
+  </section>
+</section>
+{% endblock %}
