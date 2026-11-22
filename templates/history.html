@@ -1,0 +1,63 @@
+{# Histórico das compras realizadas pelo cliente autenticado. #}
+{% extends 'base.html' %}
+{% block title %}Meus pedidos | Confia+{% endblock %}
+{% block content %}
+<h1 class="page-title h2 mb-3 d-none d-md-block">Meus pedidos</h1>
+<section class="orders-date-filter mb-3" aria-label="Filtrar pedidos por data">
+  <label for="orders-date" class="form-label fw-semibold mb-2">Encontrar compra por data</label>
+  <div class="orders-date-filter-controls">
+    <input type="date" class="form-control" id="orders-date" aria-label="Escolha a data da compra">
+    <button type="button" class="btn btn-outline-secondary" id="clear-orders-date" disabled>Limpar</button>
+  </div>
+  <small class="text-muted" id="orders-filter-feedback" aria-live="polite"></small>
+</section>
+<section class="orders-mobile orders-scroll-area" id="orders-list" aria-label="Compras realizadas" tabindex="0">
+  {% for c in compras %}
+  <article class="order-mobile-card" data-order-date="{{ c.criado_em.strftime('%Y-%m-%d') if c.criado_em else '' }}">
+    <div class="order-mobile-top"><span class="order-mobile-icon" aria-hidden="true"><i class="bi bi-bag"></i></span><div class="order-mobile-info"><strong>Pedido #{{ c.id }}</strong><small>{{ c.criado_em|data_hora_br }}</small></div><span class="order-mobile-status">Concluído</span></div>
+    <div class="d-flex justify-content-end mt-2"><strong class="order-mobile-total">R$ {{ '%.2f'|format(c.pago) }}</strong></div>
+    <div class="order-mobile-items">{{ c.itens or 'Itens não disponíveis' }} <i class="bi bi-chevron-right float-end" aria-hidden="true"></i></div>
+  </article>
+  {% else %}<div class="empty-state"><i class="bi bi-receipt fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Você ainda não realizou nenhuma compra.</p></div>{% endfor %}
+  <div class="empty-state d-none" id="orders-no-date-results"><i class="bi bi-calendar-x fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Nenhuma compra encontrada nessa data.</p></div>
+</section>
+
+{% if purchase_confirmation %}
+<div class="modal fade" id="purchase-confirmation-modal" tabindex="-1"
+     aria-labelledby="purchase-confirmation-title" aria-describedby="purchase-confirmation-description"
+     aria-hidden="true" data-purchase-confirmation="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content border-0 rounded-4 shadow">
+      <div class="modal-body text-center p-4 p-md-5">
+        <div class="purchase-success-icon mx-auto mb-3" aria-hidden="true">
+          <i class="bi bi-check-lg"></i>
+        </div>
+        <span class="text-success text-uppercase fw-bold small">Compra confirmada</span>
+        <h2 class="h3 fw-bold mt-2 mb-2" id="purchase-confirmation-title">Compra realizada!</h2>
+        <p id="purchase-confirmation-description" class="text-muted mb-4">
+          Seu pedido <strong>#{{ purchase_confirmation.purchase_id }}</strong> foi realizado com sucesso.
+        </p>
+        <div class="purchase-confirmation-details text-start rounded-3 p-3 mb-3">
+          <div class="d-flex justify-content-between gap-3 mb-2">
+            <span class="text-muted">Valor pago</span>
+            <strong class="text-success">R$ {{ '%.2f'|format(purchase_confirmation.paid) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between gap-3">
+            <span class="text-muted">Saldo atual</span>
+            <strong>R$ {{ '%.2f'|format(purchase_confirmation.new_balance) }}</strong>
+          </div>
+        </div>
+        {% if purchase_confirmation.new_balance < 0 %}
+          <p class="small text-warning-emphasis mb-3">Sua carteira ficou com saldo negativo. A próxima recarga abaterá esse valor pendente.</p>
+        {% else %}
+          <p class="small text-muted mb-4">O valor foi descontado da sua carteira.</p>
+        {% endif %}
+        <button type="button" class="btn btn-success w-100 py-2 fw-semibold" data-bs-dismiss="modal">
+          <i class="bi bi-receipt me-1" aria-hidden="true"></i> Ver meus pedidos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

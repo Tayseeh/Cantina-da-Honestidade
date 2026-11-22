@@ -1,0 +1,96 @@
+{# Página inicial do cliente com carteira e resumo de movimentações. #}
+{% extends 'base.html' %}
+{% block title %}Confia+ | Início{% endblock %}
+{% block content %}
+{% if usuario_logado and usuario_logado.perfil == 'cliente' %}
+<section class="home-welcome" aria-labelledby="home-title">
+  <h1 id="home-title">Olá, {{ usuario_logado.nome.split()[0] }}! <span aria-hidden="true">👋</span></h1>
+  <p>Aqui você pode ver seu saldo e escolher os produtos da cantina.</p>
+</section>
+<div class="home-dashboard" role="group" aria-label="Resumo da sua cantina">
+  <div class="home-main-column">
+    <section class="home-wallet-card" role="region" aria-labelledby="wallet-title" aria-describedby="wallet-description">
+      <div class="home-wallet-top">
+        <span class="home-wallet-icon" aria-hidden="true"><i class="bi bi-wallet2"></i></span>
+        <span class="home-wallet-label">MINHA CARTEIRA</span>
+      </div>
+      <h2 id="wallet-title">Saldo disponível</h2>
+      <p class="home-wallet-balance" data-wallet-balance aria-label="Saldo disponível: {{ '%.2f'|format(saldo_atual)|replace('.', ',') }} reais">R$ {{ '%.2f'|format(saldo_atual)|replace('.', ',') }}</p>
+      <div class="home-wallet-bottom"><span id="wallet-description">Use o saldo da sua carteira para fazer compras.</span></div>
+    </section>
+    <section class="home-activity-card" role="region" aria-labelledby="activity-title">
+      <div class="home-section-heading">
+        <h2 id="activity-title">ÚLTIMAS MOVIMENTAÇÕES</h2>
+      </div>
+      {% if movimentacoes_recentes %}
+      <ul class="home-activity-list" aria-label="Lista de movimentações recentes">
+        {% for movimento in movimentacoes_recentes %}
+        <li class="home-activity-item">
+          <span class="home-activity-symbol {% if movimento.operacao == 'compra' %}is-purchase{% endif %}" aria-hidden="true"><i class="bi {% if movimento.operacao == 'compra' %}bi-bag-check{% else %}bi-plus-circle{% endif %}"></i></span>
+          <span class="home-activity-description">
+            <strong>{{ movimento.descricao or ('Compra' if movimento.operacao == 'compra' else 'Recarga em dinheiro') }}</strong>
+            <time class="home-activity-date" datetime="{{ movimento.criado_em }}">{{ movimento.criado_em|data_hora_br }}</time>
+          </span>
+          <span class="home-activity-value {% if movimento.operacao == 'compra' %}is-negative{% else %}is-positive{% endif %}" aria-label="{% if movimento.operacao == 'compra' %}Débito{% else %}Crédito{% endif %} de {{ '%.2f'|format(movimento.valor)|replace('.', ' ,')|replace(' ', '') }} reais">{% if movimento.operacao == 'compra' %}−{% else %}+{% endif %} R$ {{ '%.2f'|format(movimento.valor)|replace('.', ',') }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="home-activity-empty"><i class="bi bi-receipt" aria-hidden="true"></i><p>Suas compras e recargas vão aparecer aqui.</p></div>
+      {% endif %}
+      <div class="home-section-actions">
+        <a class="home-text-link" href="{{ url_for('history') }}" aria-label="Ver todas as movimentações da carteira">Ver todas as movimentações <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </div>
+    </section>
+  </div>
+  <div class="home-side-column">
+    <section class="home-buy-card" role="region" aria-labelledby="buy-title">
+      <h2 class="home-eyebrow" id="buy-title">Comprar produtos</h2>
+      <p>Leia o QR Code do produto para adicionar ao carrinho.</p>
+      <div class="home-buy-actions" role="group" aria-label="Ações disponíveis para comprar produtos">
+        <button class="home-primary-action" type="button" data-bs-toggle="modal" data-bs-target="#homeQrScannerModal" aria-haspopup="dialog" aria-controls="homeQrScannerModal"><i class="bi bi-qr-code-scan" aria-hidden="true"></i> Ler QR Code</button>
+        <a class="home-secondary-action" href="{{ url_for('catalog') }}"><i class="bi bi-bag" aria-hidden="true"></i> Comprar</a>
+      </div>
+    </section>
+    <section class="home-featured-card" role="region" aria-labelledby="featured-title">
+      <div class="home-section-heading">
+        <h2 id="featured-title">PRODUTOS EM DESTAQUE</h2>
+      </div>
+      {% if produtos_destaque %}
+      <div class="home-featured-grid" role="group" aria-label="Produtos mais vendidos da cantina">
+        {% for produto in produtos_destaque %}
+        <a class="home-product-card" href="{{ url_for('catalog') }}" aria-label="{{ produto.nome }}, preço R$ {{ '%.2f'|format(produto.preco)|replace('.', ',') }}. Abrir catálogo de produtos">
+          <div class="home-product-image">
+            {% if produto.foto %}<img src="{{ url_for('static', filename=produto.foto) }}" alt="" loading="lazy">
+            {% elif 'batata' in produto.nome|lower %}<span aria-hidden="true">🥔</span>
+            {% elif 'fini' in produto.nome|lower or 'bala' in produto.nome|lower %}<span aria-hidden="true">🍬</span>
+            {% elif 'chocolate' in produto.nome|lower or 'wafer' in produto.nome|lower %}<span aria-hidden="true">🍫</span>
+            {% elif 'biscoito' in produto.nome|lower %}<span aria-hidden="true">🍪</span>
+            {% elif 'paçoca' in produto.nome|lower %}<span aria-hidden="true">🥜</span>
+            {% else %}<span aria-hidden="true">🛍️</span>{% endif %}
+          </div>
+          <strong>{{ produto.nome }}</strong>
+          <span class="home-product-price">R$ {{ '%.2f'|format(produto.preco)|replace('.', ',') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="home-featured-empty">Não há produtos disponíveis no momento.</p>{% endif %}
+      <p class="home-featured-note">Produtos mais vendidos.</p>
+      <div class="home-section-actions">
+        <a class="home-text-link" href="{{ url_for('catalog') }}" aria-label="Ver todos os produtos do catálogo">Ver todos os produtos <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="modal fade" id="homeQrScannerModal" tabindex="-1" aria-labelledby="homeQrScannerTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
+    <div class="modal-header"><div><p class="section-kicker mb-1">COMPRA RÁPIDA</p><h2 class="modal-title h5 mb-0" id="homeQrScannerTitle">Leia o QR Code do produto</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar leitor"></button></div>
+    <div class="modal-body"><p class="small text-muted">Aponte a câmera para o QR Code do produto. Ele será adicionado ao seu carrinho.</p><div id="home-qr-reader" class="qr-reader-box" role="region" aria-label="Visualização da câmera para leitura do QR Code"></div><p id="home-qr-status" class="small mt-3 mb-0" role="status" aria-live="polite">Preparando leitor de QR Code…</p><button type="button" class="btn btn-success w-100 mt-3" id="home-start-qr"><i class="bi bi-camera me-1" aria-hidden="true"></i> Ativar câmera</button></div>
+  </div></div>
+</div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+{% else %}
+<section class="hero mb-5"><p class="section-kicker text-warning">Cantina da Honestidade</p><h1>Escolha, retire e pague com confiança.</h1><p>Escolha os produtos que deseja comprar e pague usando o saldo da sua carteira.</p>{% if not usuario_logado %}<a class="btn btn-lg" href="{{ url_for('login') }}">Começar agora <i class="bi bi-arrow-right" aria-hidden="true"></i></a>{% endif %}</section>
+<section class="row g-3" aria-label="Como funciona"><div class="col-md-4"><div class="quick-step"><span class="step-num">1</span><b>Escolha</b><p class="mb-0 small text-muted">Escolha os produtos e adicione ao carrinho.</p></div></div><div class="col-md-4"><div class="quick-step"><span class="step-num">2</span><b>Confirme</b><p class="mb-0 small text-muted">Confira o valor da compra e informe seu PIN.</p></div></div><div class="col-md-4"><div class="quick-step"><span class="step-num">3</span><b>Acompanhe</b><p class="mb-0 small text-muted">Veja suas compras em Meus pedidos e confira as notificações.</p></div></div></section>
+{% endif %}
+{% endblock %}

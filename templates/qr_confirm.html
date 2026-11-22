@@ -1,0 +1,24 @@
+{# Confirmação do produto identificado por QR Code antes de adicioná-lo ao carrinho. #}
+{% extends "base.html" %}
+{% block title %}Confirmar produto | Confia+{% endblock %}
+{% block content %}
+<main id="conteudo-principal" class="container page-shell py-4">
+  <section class="card shadow-sm border-0 mx-auto" style="max-width: 34rem;">
+    <div class="card-body p-4 p-md-5">
+      <p class="section-kicker">Leitura de QR Code</p>
+      <h1 class="h3 mb-3">Adicionar produto ao carrinho?</h1>
+      <p class="mb-1">Produto: <strong>{{ produto.nome }}</strong></p>
+      <p class="mb-4">Preço: <strong>R$ {{ '%.2f'|format(produto.preco) }}</strong></p>
+      {% if produto.estoque|int <= 0 %}<div class="alert alert-warning">Este produto está sem estoque.</div>{% endif %}
+      <form method="post" action="{{ url_for('qr_add_to_cart', product_id=produto.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-success" type="submit" {% if produto.estoque|int <= 0 %}disabled{% endif %}>Adicionar ao carrinho</button>
+          <a class="btn btn-outline-secondary btn-cancelar" href="{{ url_for('catalog') }}">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+{% endblock %}

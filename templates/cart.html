@@ -1,0 +1,191 @@
+{# Carrinho do cliente, revisão de itens, PIN e confirmação de ciência sobre saldo negativo. #}
+{% extends 'base.html' %}
+{% block title %}Carrinho | Confia+{% endblock %}
+{% block content %}
+<div class="cart-page" id="cart-page">
+  <h1 class="page-title h2 mb-4 cart-page-title">Carrinho</h1>
+  <div id="cart-feedback" class="alert alert-danger d-none" role="alert" aria-live="assertive"></div>
+  {% if pin_error %}
+  <div class="alert alert-danger" role="alert" aria-live="assertive">{{ pin_error }}</div>
+  {% endif %}
+
+  <section id="cart-items-list" aria-label="Produtos no carrinho">
+    {% for i in itens %}
+    <article class="card mb-3 cart-line-card" data-product-id="{{ i.produto.id }}" data-quantity="{{ i.quantidade }}" data-stock="{{ i.produto.estoque }}">
+      <div class="card-body cart-line">
+        <div class="cart-line-info">
+          <h2 class="h6 mb-1">{{ i.produto.nome }}</h2>
+          <span class="small text-muted">R$ {{ '%.2f'|format(i.produto.preco) }} por unidade</span>
+        </div>
+        <div class="cart-line-controls" aria-label="Quantidade de {{ i.produto.nome }}">
+          <button type="button" class="cart-step-button cart-minus" aria-label="Diminuir quantidade de {{ i.produto.nome }}">−</button>
+          <output class="cart-quantity-value" aria-live="polite">{{ i.quantidade }}</output>
+          <button type="button" class="cart-step-button cart-plus" aria-label="Aumentar quantidade de {{ i.produto.nome }}" {% if i.quantidade >= i.produto.estoque %}disabled{% endif %}>+</button>
+        </div>
+        <strong class="cart-subtotal">R$ {{ '%.2f'|format(i.subtotal) }}</strong>
+        <button type="button" class="cart-remove-button" aria-label="Remover {{ i.produto.nome }} do carrinho"><i class="bi bi-trash3" aria-hidden="true"></i><span>Remover</span></button>
+      </div>
+    </article>
+    {% else %}
+    <div id="cart-empty-state" class="empty-state"><i class="bi bi-bag fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Seu carrinho está vazio.</p><a class="btn btn-success mt-3" href="{{ url_for('catalog') }}">Ver produtos</a></div>
+    {% endfor %}
+  </section>
+
+  <button type="button" id="cart-remove-all" class="btn btn-outline-danger w-100 mb-3 {% if itens|length <= 1 %}d-none{% endif %}"><i class="bi bi-trash3 me-1" aria-hidden="true"></i>Remover tudo</button>
+
+  <section id="cart-payment-section" class="card mt-4 {% if not itens %}d-none{% endif %}" aria-labelledby="pagamento-carrinho-titulo">
+    <div class="card-body">
+      <h2 id="pagamento-carrinho-titulo" class="h5">Total da compra <strong id="cart-grand-total" class="float-end">R$ {{ '%.2f'|format(total) }}</strong></h2>
+      <p class="text-muted d-none d-md-block">Ao confirmar, o valor será descontado automaticamente da sua carteira. Se o saldo ficar negativo, o sistema registrará o valor pendente.</p>
+      <div id="cart-negative-warning" class="alert alert-danger d-none mb-3" role="alert" aria-live="assertive">
+        <div class="fw-bold"><i class="bi bi-exclamation-octagon-fill me-1" aria-hidden="true"></i> ATENÇÃO: SALDO INSUFICIENTE</div>
+        <p class="mb-1 mt-2" id="cart-negative-warning-message">Esta compra deixará sua carteira com saldo negativo de:</p>
+        <strong id="cart-projected-balance" class="fs-4">− R$ 0,00</strong>
+        <p class="small mb-0 mt-2">Você ficará com esse valor pendente. Na próxima recarga, o saldo negativo será descontado antes de liberar o restante para novas compras.</p>
+      </div>
+      <form method="post" action="{{ url_for('checkout') }}" class="row g-3 align-items-end"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="idempotency_key" value="{{ checkout_key }}">
+        <div id="cart-negative-acknowledgement" class="form-check d-none mb-3 col-12">
+          <input class="form-check-input" type="checkbox" name="acknowledge_negative_balance" value="1" id="cart-acknowledge-negative-balance">
+          <label class="form-check-label" for="cart-acknowledge-negative-balance" id="cart-negative-acknowledgement-label">Entendi que esta compra deixará minha carteira com saldo negativo.</label>
+        </div>
+        <p id="cart-negative-confirm-hint" class="small text-danger mt-2 mb-0 d-none col-12">Para continuar, confirme que leu e entendeu o aviso de saldo negativo.</p>
+        <div class="col-md-6"><label class="form-label" for="pin-compra">PIN de pagamento</label><input class="form-control" id="pin-compra" type="password" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" name="pin" autocomplete="current-password" required placeholder="Digite os 4 números"></div>
+        <div class="col-md-6"><button class="btn btn-success w-100" type="submit">Finalizar compra</button></div>
+      </form>
+    </div>
+  </section>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('cart-page');
+  const paymentPin = document.getElementById('pin-compra');
+  if (paymentPin) paymentPin.addEventListener('input', () => {
+    paymentPin.value = paymentPin.value.replace(/\D/g, '').slice(0, 4);
+  });
+  if (!root) return;
+  const list = document.getElementById('cart-items-list');
+  const feedback = document.getElementById('cart-feedback');
+  const clearButton = document.getElementById('cart-remove-all');
+  const payment = document.getElementById('cart-payment-section');
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const money = value => new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(Number(value || 0));
+  const walletBalance = Number({{ saldo_atual|default(0)|tojson }});
+  const acknowledgementRecorded = {{ 'true' if saldo_negativo_ciencia_registrada else 'false' }};
+  const walletAlreadyNegative = walletBalance < 0;
+  const negativeWarning = document.getElementById('cart-negative-warning');
+  const acknowledgement = document.getElementById('cart-negative-acknowledgement');
+  const acknowledgementCheckbox = document.getElementById('cart-acknowledge-negative-balance');
+  const projectedBalance = document.getElementById('cart-projected-balance');
+  const confirmButton = payment.querySelector('button[type="submit"]');
+  const confirmHint = document.getElementById('cart-negative-confirm-hint');
+
+  function refreshNegativeWarning(total) {
+    const projected = walletBalance - Number(total || 0);
+    const requiresAcknowledgement = projected < 0 && (walletAlreadyNegative || !acknowledgementRecorded);
+    const warningMessage = document.getElementById('cart-negative-warning-message');
+    const acknowledgementLabel = document.getElementById('cart-negative-acknowledgement-label');
+    if (warningMessage) {
+      warningMessage.textContent = walletAlreadyNegative
+        ? 'Sua carteira já está com saldo negativo. Esta compra manterá ou aumentará o valor pendente:'
+        : 'Esta compra deixará sua carteira com saldo negativo de:';
+    }
+    if (acknowledgementLabel) {
+      acknowledgementLabel.textContent = walletAlreadyNegative
+        ? 'Entendi que minha carteira já está negativa e que esta compra manterá ou aumentará o valor pendente.'
+        : 'Entendi que esta compra deixará minha carteira com saldo negativo.';
+    }
+    if (negativeWarning) negativeWarning.classList.toggle('d-none', !requiresAcknowledgement);
+    if (acknowledgement) acknowledgement.classList.toggle('d-none', !requiresAcknowledgement);
+    if (projectedBalance) projectedBalance.textContent = money(projected);
+    if (!requiresAcknowledgement && acknowledgementCheckbox) acknowledgementCheckbox.checked = false;
+    if (confirmButton) confirmButton.disabled = requiresAcknowledgement && !acknowledgementCheckbox.checked;
+    if (confirmHint) confirmHint.classList.toggle('d-none', !requiresAcknowledgement || acknowledgementCheckbox.checked);
+  }
+
+  acknowledgementCheckbox?.addEventListener('change', () => {
+    const requiresAcknowledgement = !negativeWarning.classList.contains('d-none');
+    confirmButton.disabled = requiresAcknowledgement && !acknowledgementCheckbox.checked;
+    confirmHint.classList.toggle('d-none', !requiresAcknowledgement || acknowledgementCheckbox.checked);
+  });
+
+  function syncEmptyAndActions(total) {
+    const cards = list.querySelectorAll('.cart-line-card');
+    clearButton.classList.toggle('d-none', cards.length <= 1);
+    payment.classList.toggle('d-none', cards.length === 0);
+    let empty = document.getElementById('cart-empty-state');
+    if (!cards.length && !empty) {
+      empty = document.createElement('div');
+      empty.id = 'cart-empty-state';
+      empty.className = 'empty-state cart-empty-state';
+      empty.setAttribute('role', 'status');
+      empty.innerHTML = `<i class="bi bi-bag fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Seu carrinho está vazio.</p><a class="btn btn-success mt-3" href="{{ url_for('catalog') }}">Ver produtos</a>`;
+      list.appendChild(empty);
+    } else if (cards.length && empty) empty.remove();
+    const totalNode = document.getElementById('cart-grand-total');
+    if (totalNode) totalNode.textContent = money(total);
+    refreshNegativeWarning(total);
+  }
+
+  async function setQuantity(card, quantity) {
+    const id = card.dataset.productId;
+    const max = Number(card.dataset.stock || 999999);
+    quantity = Math.max(0, Math.min(max, quantity));
+    const buttons = card.querySelectorAll('button');
+    buttons.forEach(button => button.disabled = true);
+    feedback.classList.add('d-none');
+    try {
+      const response = await fetch(`/api/carrinho/${id}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRF-Token':csrf,'Accept':'application/json'},
+        body:JSON.stringify({quantidade:quantity})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível atualizar o carrinho.');
+      if (quantity === 0) card.remove();
+      else {
+        card.dataset.quantity = String(quantity);
+        card.querySelector('.cart-quantity-value').textContent = String(quantity);
+        card.querySelector('.cart-subtotal').textContent = money(data.subtotal);
+        card.querySelector('.cart-plus').disabled = quantity >= max;
+      }
+      buttons.forEach(button => button.disabled = false);
+      const plusButton = card.querySelector('.cart-plus');
+      if (plusButton) plusButton.disabled = quantity >= max;
+      syncEmptyAndActions(data.total);
+    } catch (error) {
+      feedback.textContent = error.message;
+      feedback.classList.remove('d-none');
+      buttons.forEach(button => button.disabled = false);
+    }
+  }
+
+  refreshNegativeWarning(Number({{ total|default(0)|tojson }}));
+
+  list.addEventListener('click', event => {
+    const card = event.target.closest('.cart-line-card');
+    if (!card) return;
+    const current = Number(card.dataset.quantity || 0);
+    if (event.target.closest('.cart-minus')) setQuantity(card, current - 1);
+    else if (event.target.closest('.cart-plus')) setQuantity(card, current + 1);
+    else if (event.target.closest('.cart-remove-button')) setQuantity(card, 0);
+  });
+
+  clearButton.addEventListener('click', async () => {
+    if (!window.confirm('Deseja remover todos os produtos do carrinho?')) return;
+    clearButton.disabled = true;
+    feedback.classList.add('d-none');
+    try {
+      const response = await fetch('/api/carrinho', {method:'DELETE',headers:{'X-CSRF-Token':csrf,'Accept':'application/json'}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Não foi possível limpar o carrinho.');
+      list.querySelectorAll('.cart-line-card').forEach(card => card.remove());
+      syncEmptyAndActions(data.total);
+      feedback.classList.add('d-none');
+    } catch (error) {
+      feedback.textContent = error.message;
+      feedback.classList.remove('d-none');
+    } finally { clearButton.disabled = false; }
+  });
+})();
+</script>
+{% endblock %}

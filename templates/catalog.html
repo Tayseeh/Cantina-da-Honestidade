@@ -1,0 +1,414 @@
+{# Cardápio do cliente, pesquisa de produtos, carteira, carrinho e fluxo de compra. #}
+{% extends 'base.html' %}
+{% block title %}Produtos | Confia+{% endblock %}
+
+{% block content %}
+
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header"><div><p class="section-kicker mb-1">COMPRA RÁPIDA</p><h2 class="modal-title h5 mb-0" id="qrScannerTitle">Leia o QR Code do produto</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar leitor"></button></div><div class="modal-body"><p class="small text-muted">Aponte a câmera para o QR Code do produto. Ele será adicionado ao seu carrinho.</p><div id="qr-reader" class="qr-reader-box" aria-label="Área da câmera para leitura do QR Code"></div><p id="qr-reader-status" class="small mt-3 mb-0" role="status" aria-live="polite">Ao iniciar, permita o acesso à câmera.</p><button type="button" class="btn btn-success w-100 mt-3" id="start-qr-reader"><i class="bi bi-camera me-1" aria-hidden="true"></i> Ativar câmera</button></div></div></div></div>
+<div class="row g-4 catalog-page-layout">
+  <section class="col-lg-8" id="secao-produtos" tabindex="-1" aria-label="Produtos disponíveis">
+    <div class="catalog-search-wrap mb-4">
+      <label class="form-label fw-semibold catalog-search-label" for="product-search"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar produto</label>
+      <div class="input-group catalog-search-input-group">
+        <i class="bi bi-search catalog-search-field-icon" aria-hidden="true"></i>
+        <input type="search" id="product-search" class="form-control" placeholder="Digite o nome do produto..." autocomplete="off" aria-describedby="product-search-help product-search-status">
+        <button class="btn btn-outline-secondary" type="button" id="clear-product-search" aria-label="Limpar busca"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      </div>
+      <button type="button" class="btn w-100 catalog-mobile-scan-button" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+        <i class="bi bi-qr-code-scan me-2" aria-hidden="true"></i> Ler QR Code
+      </button>
+      <div id="product-search-help" class="form-text">A busca procura pelo nome do produto nas categorias Snacks e Bebidas.</div>
+      <p id="product-search-status" class="small text-muted mt-2 mb-0" role="status" aria-live="polite"></p>
+    </div>
+    <div class="mobile-category-filters" role="group" aria-label="Filtrar categorias">
+      <button type="button" class="active" data-category-filter="all"><i class="bi bi-grid-fill" aria-hidden="true"></i> Todos</button>
+      <button type="button" data-category-filter="snacks"><i class="bi bi-basket" aria-hidden="true"></i> Snacks</button>
+      <button type="button" data-category-filter="bebidas"><i class="bi bi-cup-straw" aria-hidden="true"></i> Bebidas</button>
+    </div>
+    {% if produtos %}
+      {% set ns = namespace(bebidas=0, snacks=0) %}
+      {% for p in produtos %}
+        {% set nome = p.nome|lower %}
+        {% if 'água' in nome or 'agua' in nome or 'refrigerante' in nome or 'suco' in nome or 'café' in nome or 'cafe' in nome or 'chá' in nome or 'cha ' in nome or 'energético' in nome or 'isotônico' in nome %}
+          {% set ns.bebidas = ns.bebidas + 1 %}
+        {% else %}
+          {% set ns.snacks = ns.snacks + 1 %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.snacks %}
+      <section class="product-category mb-4" data-category-section="snacks" aria-labelledby="category-snacks-title">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h4 fw-bold mb-0" id="category-snacks-title"><i class="bi bi-cookie me-2" aria-hidden="true"></i>Snacks</h2>
+          <span class="badge rounded-pill text-bg-light">{{ ns.snacks }} produtos</span>
+        </div>
+        <div class="row g-3 catalog-products-grid">
+          {% for p in produtos %}
+            {% set nome = p.nome|lower %}
+            {% if not ('água' in nome or 'agua' in nome or 'refrigerante' in nome or 'suco' in nome or 'café' in nome or 'cafe' in nome or 'chá' in nome or 'cha ' in nome or 'energético' in nome or 'isotônico' in nome) %}
+            <div class="col-12 col-sm-6 product-search-item" data-product-search="{{ p.nome|lower }}">
+              <article class="card food-card h-100">
+                <div class="food-icon">{% if p.foto %}<img class="food-image" src="{{ url_for('static', filename=p.foto) }}" alt="Foto de {{ p.nome }}">{% elif 'batata' in p.nome|lower %}<span aria-hidden="true">🥔</span>{% elif 'fini' in p.nome|lower %}<span aria-hidden="true">🍬</span>{% elif 'chocolate' in p.nome|lower %}<span aria-hidden="true">🍫</span>{% elif 'biscoito' in p.nome|lower %}<span aria-hidden="true">🍪</span>{% else %}<span aria-hidden="true">🍽️</span>{% endif %}</div>
+                <div class="card-body d-flex flex-column">
+                  <h3 class="h5 fw-bold">{{ p.nome }}</h3>
+                  <p class="text-muted small flex-grow-1">{{ p.descricao or 'Disponível na cantina.' }}</p>
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                    <span class="price"><span class="visually-hidden">Preço: </span>R$ {{ '%.2f'|format(p.preco) }}</span>
+                    <button type="button" data-add-url="{{ url_for('add_cart', product_id=p.id, next=url_for('catalog')) }}" class="btn btn-success btn-sm add-to-cart" data-product-id="{{ p.id }}" data-product-name="{{ p.nome }}" data-product-price="{{ p.preco }}" data-product-stock="{{ p.estoque }}" aria-label="Adicionar {{ p.nome }} ao carrinho. Preço: R$ {{ '%.2f'|format(p.preco) }}"><i class="bi bi-plus-lg" aria-hidden="true"></i><span class="visually-hidden">Adicionar</span></button>
+                  </div>
+                </div>
+              </article>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      {% if ns.bebidas %}
+      <section class="product-category mb-4" data-category-section="bebidas" aria-labelledby="category-drinks-title">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h4 fw-bold mb-0" id="category-drinks-title"><i class="bi bi-cup-straw me-2" aria-hidden="true"></i>Bebidas</h2>
+          <span class="badge rounded-pill text-bg-light">{{ ns.bebidas }} produtos</span>
+        </div>
+        <div class="row g-3 catalog-products-grid">
+          {% for p in produtos %}
+            {% set nome = p.nome|lower %}
+            {% if 'água' in nome or 'agua' in nome or 'refrigerante' in nome or 'suco' in nome or 'café' in nome or 'cafe' in nome or 'chá' in nome or 'cha ' in nome or 'energético' in nome or 'isotônico' in nome %}
+            <div class="col-12 col-sm-6 product-search-item" data-product-search="{{ p.nome|lower }}">
+              <article class="card food-card h-100">
+                <div class="food-icon">{% if p.foto %}<img class="food-image" src="{{ url_for('static', filename=p.foto) }}" alt="Foto de {{ p.nome }}">{% elif 'batata' in p.nome|lower %}<span aria-hidden="true">🥔</span>{% elif 'fini' in p.nome|lower %}<span aria-hidden="true">🍬</span>{% elif 'chocolate' in p.nome|lower %}<span aria-hidden="true">🍫</span>{% elif 'biscoito' in p.nome|lower %}<span aria-hidden="true">🍪</span>{% else %}<span aria-hidden="true">🍽️</span>{% endif %}</div>
+                <div class="card-body d-flex flex-column">
+                  <h3 class="h5 fw-bold">{{ p.nome }}</h3>
+                  <p class="text-muted small flex-grow-1">{{ p.descricao or 'Disponível na cantina.' }}</p>
+                  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                    <span class="price"><span class="visually-hidden">Preço: </span>R$ {{ '%.2f'|format(p.preco) }}</span>
+                    <button type="button" data-add-url="{{ url_for('add_cart', product_id=p.id, next=url_for('catalog')) }}" class="btn btn-success btn-sm add-to-cart" data-product-id="{{ p.id }}" data-product-name="{{ p.nome }}" data-product-price="{{ p.preco }}" data-product-stock="{{ p.estoque }}" aria-label="Adicionar {{ p.nome }} ao carrinho. Preço: R$ {{ '%.2f'|format(p.preco) }}"><i class="bi bi-plus-lg" aria-hidden="true"></i><span class="visually-hidden">Adicionar</span></button>
+                  </div>
+                </div>
+              </article>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      <div id="product-search-empty" class="empty-state d-none" role="status" aria-live="polite">
+        <i class="bi bi-search display-4" aria-hidden="true"></i>
+        <p class="mt-3 mb-0">Nenhum produto encontrado. Tente outro nome.</p>
+      </div>
+    {% else %}
+      <div class="empty-state"><i class="bi bi-basket display-4" aria-hidden="true"></i><p class="mt-3 mb-0">Não há produtos disponíveis no momento.</p></div>
+    {% endif %}
+  </section>
+  <aside class="col-lg-4 catalog-sidebar" aria-label="Sua carteira e carrinho">
+    <section class="catalog-wallet-card" aria-labelledby="catalog-wallet-title"><div class="catalog-wallet-top"><i class="bi bi-wallet2" aria-hidden="true"></i><span>MINHA CARTEIRA</span></div><p id="catalog-wallet-title">Saldo disponível</p><strong data-wallet-balance>R$ {{ '%.2f'|format(saldo_atual)|replace('.', ',') }}</strong><small>Use seu saldo para pagar suas compras.</small></section>
+    <div class="catalog-scan-wrap catalog-sidebar-scan" aria-label="Leitor de QR Code">
+      <button type="button" class="btn w-100 catalog-scan-button" data-bs-toggle="modal" data-bs-target="#qrScannerModal"><i class="bi bi-qr-code-scan me-1" aria-hidden="true"></i> Ler QR Code</button>
+    </div>
+    <div id="catalog-cart-panel" class="card catalog-cart {% if not itens_carrinho %}d-none{% endif %}"><div class="card-body"><div class="d-flex justify-content-between align-items-center gap-2 mb-3 cart-panel-heading">
+      <h2 id="titulo-carrinho" class="h5 fw-bold mb-0" tabindex="-1"><i class="bi bi-bag" aria-hidden="true"></i> Meu carrinho</h2>
+      <a class="mobile-cart-open" href="{{ url_for('show_cart') }}">Ver carrinho</a>
+      <div class="d-flex align-items-center gap-2">
+        <span id="cart-count" class="badge text-bg-success" aria-label="Unidades no carrinho">{{ itens_carrinho|sum(attribute='quantidade') }}</span>
+        <button type="button" id="cart-minimize-toggle" class="btn btn-sm btn-outline-secondary cart-minimize-toggle d-lg-none" aria-expanded="true" aria-controls="cart-items cart-footer" aria-label="Minimizar carrinho">
+          <i class="bi bi-chevron-down" aria-hidden="true"></i><span class="visually-hidden">Minimizar carrinho</span>
+        </button>
+      </div>
+    </div>
+    <div id="cart-minimized-summary" class="cart-minimized-summary d-none" aria-live="polite">
+      <span>Itens no carrinho: <strong id="cart-minimized-count">{{ itens_carrinho|sum(attribute='quantidade') }}</strong></span>
+      <strong id="cart-minimized-total">R$ {{ '%.2f'|format(total_carrinho) }}</strong>
+    </div>
+    <div id="cart-items">{% for i in itens_carrinho %}<article class="border-bottom py-2 cart-item" tabindex="0" role="group" aria-label="{{ i.produto.nome }}, quantidade {{ i.quantidade }}, subtotal R$ {{ '%.2f'|format(i.subtotal) }}" data-product-id="{{ i.produto.id }}" data-quantity="{{ i.quantidade }}" data-max="{{ i.produto.estoque }}"><div class="d-flex justify-content-between align-items-center gap-2"><strong class="small">{{ i.produto.nome }}</strong></div><div class="d-flex justify-content-between align-items-center mt-2"><div class="btn-group btn-group-sm quantity-control"><button type="button" class="btn btn-outline-success minus" aria-label="Diminuir quantidade de {{ i.produto.nome }}">−</button><span class="btn btn-light disabled quantity-value" aria-label="Quantidade: {{ i.quantidade }}">{{ i.quantidade }}</span><button type="button" class="btn btn-outline-success plus" aria-label="Aumentar quantidade de {{ i.produto.nome }}">+</button></div><strong class="small item-subtotal">R$ {{ '%.2f'|format(i.subtotal) }}</strong><button type="button" class="btn btn-link btn-sm p-0 text-danger remove-item d-inline-flex align-items-center gap-1" aria-label="Remover {{ i.produto.nome }} do carrinho"><i class="bi bi-trash3" aria-hidden="true"></i><span>Remover</span></button></div></article>{% endfor %}</div>
+    <button type="button" id="clear-cart" class="btn btn-outline-danger btn-sm w-100 mt-2 {% if itens_carrinho|length <= 1 %}d-none{% endif %}" aria-label="Remover todos os produtos do carrinho"><i class="bi bi-trash3" aria-hidden="true"></i> Remover tudo</button>
+    <div id="cart-feedback" class="small text-danger mt-2" role="alert" aria-live="assertive" aria-atomic="true" aria-label="Avisos do carrinho"></div>
+    <div id="cart-announcement" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="empty-cart" class="text-center py-4 text-muted {% if itens_carrinho %}d-none{% endif %}"><i class="bi bi-bag fs-2" aria-hidden="true"></i><p class="small mb-0 mt-2">Seu carrinho está vazio.</p></div>
+    <div id="cart-footer" class="{% if not itens_carrinho %}d-none{% endif %}"><div class="d-flex justify-content-between align-items-center mt-3"><strong>Total</strong><strong id="cart-total" class="price">R$ {{ '%.2f'|format(total_carrinho) }}</strong></div><button type="button" class="btn btn-success w-100 mt-3" data-bs-toggle="modal" data-bs-target="#confirmPurchase"><i class="bi bi-bag-check" aria-hidden="true"></i> Comprar agora</button></div>
+    </div>
+  </aside>
+</div>
+<style>
+  /* Aviso de saldo negativo: contraste alto e hierarquia visual para destacar o risco antes da confirmação. */
+  #negative-warning {
+    border: 2px solid #b42318;
+    border-left-width: 7px;
+    border-radius: 14px;
+    background: #fff1f0;
+    color: #7a1712;
+    padding: 1rem !important;
+    box-shadow: 0 4px 14px rgba(180, 35, 24, .12);
+  }
+  #negative-warning .warning-title { display: flex; align-items: center; gap: .55rem; font-size: 1.05rem; font-weight: 800; }
+  #negative-warning .warning-amount { display: block; margin: .45rem 0; font-size: clamp(1.6rem, 5vw, 2rem); line-height: 1.15; font-weight: 900; letter-spacing: -.03em; }
+  #negative-warning .warning-detail { margin: 0; font-size: .95rem; line-height: 1.45; }
+  /* Alinha a caixa de seleção e o texto sem deixar o checkbox escapar do contêiner.
+     O Bootstrap posiciona .form-check-input de forma absoluta por padrão; aqui usamos flex. */
+  #negative-acknowledgement {
+    display: flex;
+    align-items: flex-start;
+    gap: .7rem;
+    margin-left: 0;
+    padding: .8rem;
+    border: 1px solid #e1a6a2;
+    border-radius: 10px;
+    background: #fffafa;
+  }
+  #negative-acknowledgement .form-check-input {
+    position: static;
+    flex: 0 0 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    margin: .15rem 0 0;
+    border-color: #9f251d;
+    cursor: pointer;
+  }
+  #negative-acknowledgement .form-check-label {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    color: #651b16;
+    font-weight: 700;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+  #negative-acknowledgement .form-check-input:focus-visible {
+    outline: 3px solid #1b7f52;
+    outline-offset: 3px;
+  }
+</style>
+<div class="modal fade" id="confirmPurchase" tabindex="-1" aria-hidden="true" aria-labelledby="titulo-confirmar-compra">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div><p class="section-kicker mb-1">CONFIRMAR COMPRA</p><h2 class="modal-title h4 mb-0" id="titulo-confirmar-compra">Está tudo certo?</h2></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar confirmação"></button>
+      </div>
+      <form method="post" action="{{ url_for('checkout') }}" onsubmit="return false;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="idempotency_key" value="{{ checkout_key }}">
+        <div class="modal-body">
+          <p class="mb-3">O total de <strong id="modal-total">R$ {{ '%.2f'|format(total_carrinho) }}</strong> será descontado da sua carteira.</p>
+          <div id="negative-warning" class="d-none mb-3" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="warning-title"><i class="bi bi-exclamation-octagon-fill fs-4" aria-hidden="true"></i><span>ATENÇÃO: SALDO INSUFICIENTE</span></div>
+            <p class="warning-detail mt-2">Esta compra deixará sua carteira com saldo negativo de:</p>
+            <strong id="projected-balance" class="warning-amount">− R$ 0,00</strong>
+            <p class="warning-detail">Você ficará com esse valor pendente. Na próxima recarga, o saldo negativo será descontado antes de liberar o restante para novas compras.</p>
+          </div>
+          <div id="negative-acknowledgement" class="form-check d-none mb-3">
+            <input class="form-check-input" type="checkbox" name="acknowledge_negative_balance" value="1" id="acknowledge-negative-balance">
+            <label class="form-check-label" for="acknowledge-negative-balance">Entendi que esta compra deixará minha carteira com saldo negativo.</label>
+          </div>
+          <div id="pin-error-modal" class="alert alert-danger d-none mb-3" role="alert" aria-live="assertive"></div>
+          <label class="form-label fw-bold" for="pin-compra">PIN de pagamento</label>
+          <input class="form-control" id="pin-compra" type="password" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}" name="pin" autocomplete="current-password" required placeholder="Digite os 4 números">
+          <p id="negative-confirm-hint" class="small text-danger mt-2 mb-0 d-none">Para continuar, confirme que leu e entendeu o aviso de saldo negativo.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Voltar</button>
+          <button id="confirm-purchase-button" class="btn btn-success" type="submit">Confirmar compra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const formatMoney = value => new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(value);
+const walletBalance = Number({{ saldo_atual }});
+const negativeBalanceAcknowledgementRecorded = {{ 'true' if saldo_negativo_ciencia_registrada else 'false' }};
+function refreshProjectedBalance(total) {
+  // Recalcula o saldo após a compra e exige confirmação explícita quando ele ficar negativo.
+  const projected = walletBalance - total;
+  const hasNegativeBalance = projected < 0 && !negativeBalanceAcknowledgementRecorded;
+  const warning = document.querySelector('#negative-warning');
+  const acknowledgement = document.querySelector('#negative-acknowledgement');
+  const checkbox = document.querySelector('#acknowledge-negative-balance');
+  const confirmButton = document.querySelector('#confirm-purchase-button');
+  const hint = document.querySelector('#negative-confirm-hint');
+
+  warning.classList.toggle('d-none', !hasNegativeBalance);
+  acknowledgement.classList.toggle('d-none', !hasNegativeBalance);
+  document.querySelector('#projected-balance').textContent = formatMoney(projected);
+
+  // Se o carrinho voltar a caber no saldo, remove a confirmação extra.
+  if (!hasNegativeBalance) checkbox.checked = false;
+  confirmButton.disabled = hasNegativeBalance && !checkbox.checked;
+  hint.classList.toggle('d-none', !hasNegativeBalance || checkbox.checked);
+}
+
+// Mantém a confirmação bloqueada até a pessoa reconhecer o aviso de saldo negativo.
+document.querySelector('#acknowledge-negative-balance').addEventListener('change', () => {
+  const hasNegativeBalance = !document.querySelector('#negative-warning').classList.contains('d-none');
+  const acknowledged = document.querySelector('#acknowledge-negative-balance').checked;
+  document.querySelector('#confirm-purchase-button').disabled = hasNegativeBalance && !acknowledged;
+  document.querySelector('#negative-confirm-hint').classList.toggle('d-none', !hasNegativeBalance || acknowledged);
+});
+async function changeQuantity(item, quantity) {
+  const feedback = document.querySelector('#cart-feedback');
+  feedback.textContent = '';
+  const response = await fetch(`/api/carrinho/${item.dataset.productId}`, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content}, body: JSON.stringify({quantidade: quantity})});
+  const data = await response.json();
+  if (!response.ok) { feedback.textContent = data.error; return; }
+  if (quantity === 0) item.remove();
+  else { item.dataset.quantity = quantity; item.querySelector('.quantity-value').textContent = quantity; item.querySelector('.quantity-value').setAttribute('aria-label', `Quantidade: ${quantity}`); item.querySelector('.item-subtotal').textContent = formatMoney(data.subtotal); }
+  document.querySelector('#cart-count').textContent = data.itens;
+  document.querySelector('#cart-minimized-count').textContent = data.itens;
+  document.querySelector('#cart-minimized-total').textContent = formatMoney(data.total);
+  document.querySelector('#clear-cart').classList.toggle('d-none', document.querySelectorAll('#cart-items .cart-item').length <= 1);
+  document.querySelector('#cart-total').textContent = formatMoney(data.total);
+  document.querySelector('#modal-total').textContent = formatMoney(data.total);
+  refreshProjectedBalance(data.total);
+  document.querySelector('#empty-cart').classList.toggle('d-none', data.itens > 0);
+  document.querySelector('#cart-footer').classList.toggle('d-none', data.itens === 0);
+  document.querySelector('#catalog-cart-panel').classList.toggle('d-none', data.itens === 0);
+}
+const cartAnnouncement = document.querySelector('#cart-announcement');
+let announceTimer;
+function announceCart(message) {
+  window.clearTimeout(announceTimer);
+  cartAnnouncement.textContent = '';
+  // Deixa a região persistente vazia por um instante para leitores de tela
+  // perceberem a mudança como uma nova mensagem, sem mover o foco.
+  announceTimer = window.setTimeout(() => { cartAnnouncement.textContent = message; }, 250);
+}
+function updateCartSummary(data) {
+  document.querySelector('#cart-count').textContent = data.itens;
+  document.querySelector('#cart-minimized-count').textContent = data.itens;
+  document.querySelector('#cart-minimized-total').textContent = formatMoney(data.total);
+  document.querySelector('#cart-total').textContent = formatMoney(data.total);
+  document.querySelector('#modal-total').textContent = formatMoney(data.total);
+  document.querySelector('#empty-cart').classList.toggle('d-none', data.itens > 0);
+  document.querySelector('#cart-footer').classList.toggle('d-none', data.itens === 0);
+  document.querySelector('#catalog-cart-panel').classList.toggle('d-none', data.itens === 0);
+  document.querySelector('#clear-cart').classList.toggle('d-none', document.querySelectorAll('#cart-items .cart-item').length <= 1);
+  refreshProjectedBalance(data.total);
+}
+function upsertCartItem(button, data) {
+  const container = document.querySelector('#cart-items');
+  let item = container.querySelector(`.cart-item[data-product-id="${data.produto_id}"]`);
+  const name = data.nome || (button && button.dataset.productName) || 'Produto';
+  const price = Number(data.subtotal) / Number(data.quantidade_produto || 1);
+  if (!item) {
+    item = document.createElement('article');
+    item.className = 'border-bottom py-2 cart-item';
+    item.tabIndex = 0; item.setAttribute('role', 'group');
+    item.dataset.productId = data.produto_id;
+    item.dataset.max = (button && button.dataset.productStock) || '999999';
+    item.innerHTML = `<div class="d-flex justify-content-between align-items-center gap-2"><strong class="small cart-product-name"></strong></div><div class="d-flex justify-content-between align-items-center mt-2"><div class="btn-group btn-group-sm quantity-control"><button type="button" class="btn btn-outline-success minus">−</button><span class="btn btn-light disabled quantity-value"></span><button type="button" class="btn btn-outline-success plus">+</button></div><strong class="small item-subtotal"></strong><button type="button" class="btn btn-link btn-sm p-0 text-danger remove-item d-inline-flex align-items-center gap-1"><i class="bi bi-trash3" aria-hidden="true"></i><span>Remover</span></button></div>`;
+    item.querySelector('.minus').setAttribute('aria-label', `Diminuir quantidade de ${name}`);
+    item.querySelector('.plus').setAttribute('aria-label', `Aumentar quantidade de ${name}`);
+    item.querySelector('.remove-item').setAttribute('aria-label', `Remover ${name} do carrinho`);
+    container.appendChild(item);
+  }
+  item.dataset.quantity = data.quantidade_produto;
+  item.setAttribute('aria-label', `${name}, quantidade ${data.quantidade_produto}, subtotal ${formatMoney(data.subtotal)}`);
+  item.querySelector('.cart-product-name').textContent = name;
+  item.querySelector('.quantity-value').textContent = data.quantidade_produto;
+  item.querySelector('.quantity-value').setAttribute('aria-label', `Quantidade: ${data.quantidade_produto}`);
+  item.querySelector('.item-subtotal').textContent = formatMoney(data.subtotal);
+}
+document.addEventListener('click', async event => {
+  const button = event.target.closest('button.add-to-cart');
+  if (!button) return;
+  event.preventDefault();
+  const feedback = document.querySelector('#cart-feedback');
+  feedback.textContent = '';
+  button.setAttribute('aria-busy', 'true');
+  try {
+    const response = await fetch(button.dataset.addUrl, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content}});
+    const data = await response.json();
+    if (!response.ok) { feedback.textContent = data.error || 'Não foi possível adicionar o produto.'; announceCart(feedback.textContent); return; }
+    upsertCartItem(button, data);
+    updateCartSummary(data);
+    announceCart(`${data.nome} adicionado ao carrinho. Quantidade deste produto: ${data.quantidade_produto}. Total de unidades no carrinho: ${data.itens}.`);
+  } catch (_) {
+    feedback.textContent = 'Não foi possível adicionar o produto. Verifique sua conexão e tente novamente.';
+    announceCart(feedback.textContent);
+  } finally { button.removeAttribute('aria-busy'); }
+});
+
+document.querySelector('#cart-items').addEventListener('click', event => {
+  const item = event.target.closest('.cart-item'); if (!item) return;
+  const current = Number(item.dataset.quantity);
+  if (event.target.closest('.plus')) changeQuantity(item, current + 1);
+  if (event.target.closest('.minus')) changeQuantity(item, current - 1);
+  if (event.target.closest('.remove-item')) changeQuantity(item, 0);
+});
+document.querySelector('#clear-cart').addEventListener('click', async () => {
+  if (!window.confirm('Deseja remover todos os produtos do carrinho?')) return;
+  const feedback = document.querySelector('#cart-feedback');
+  feedback.textContent = '';
+  const response = await fetch('/api/carrinho', {method: 'DELETE', headers: {'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content}});
+  const data = await response.json();
+  if (!response.ok) { feedback.textContent = data.error || 'Não foi possível limpar o carrinho.'; return; }
+  document.querySelector('#cart-items').replaceChildren();
+  document.querySelector('#cart-count').textContent = '0';
+  document.querySelector('#cart-minimized-count').textContent = '0';
+  document.querySelector('#cart-minimized-total').textContent = formatMoney(data.total);
+  document.querySelector('#cart-total').textContent = formatMoney(data.total);
+  document.querySelector('#modal-total').textContent = formatMoney(data.total);
+  document.querySelector('#clear-cart').classList.add('d-none');
+  document.querySelector('#empty-cart').classList.remove('d-none');
+  document.querySelector('#cart-footer').classList.add('d-none');
+  document.querySelector('#catalog-cart-panel').classList.add('d-none');
+  refreshProjectedBalance(data.total);
+});
+
+// Permite minimizar e expandir o carrinho fixo na versão mobile.
+document.addEventListener('click', event => {
+  const toggle = event.target.closest('#cart-minimize-toggle');
+  if (!toggle) return;
+
+  const panel = document.getElementById('catalog-cart-panel');
+  if (!panel) return;
+
+  const minimized = panel.classList.toggle('cart-minimized');
+  toggle.setAttribute('aria-expanded', String(!minimized));
+  toggle.setAttribute('aria-label', minimized ? 'Expandir carrinho' : 'Minimizar carrinho');
+
+  const icon = toggle.querySelector('i');
+  if (icon) {
+    icon.classList.toggle('bi-chevron-down', !minimized);
+    icon.classList.toggle('bi-chevron-up', minimized);
+  }
+
+  const hiddenLabel = toggle.querySelector('.visually-hidden');
+  if (hiddenLabel) {
+    hiddenLabel.textContent = minimized ? 'Expandir carrinho' : 'Minimizar carrinho';
+  }
+});
+
+refreshProjectedBalance({{ total_carrinho }});
+
+// Revalida o saldo e o total no momento em que o modal é aberto,
+// garantindo que o aviso também seja atualizado no fluxo mobile.
+document.getElementById('confirmPurchase').addEventListener('show.bs.modal', () => {
+  const totalText = document.getElementById('modal-total')?.textContent || '';
+  const parsedTotal = Number(totalText.replace(/[^0-9,.-]/g, '').replace('.', '').replace(',', '.'));
+  refreshProjectedBalance(Number.isFinite(parsedTotal) ? parsedTotal : {{ total_carrinho }});
+});
+// Atalhos: Alt+1 = produtos; Alt+2 = carrinho.
+// Captura cedo o evento e considera key, code e keyCode (teclado brasileiro/NumPad).
+window.addEventListener('keydown', event => {
+  if (!event.altKey || event.ctrlKey || event.shiftKey || event.metaKey || event.getModifierState?.('AltGraph')) return;
+  if (document.querySelector('.modal.show')) return;
+
+  const pressed = String(event.key || '');
+  const code = String(event.code || '');
+  const isOne = pressed === '1' || code === 'Digit1' || code === 'Numpad1' || event.keyCode === 49 || event.keyCode === 97;
+  const isTwo = pressed === '2' || code === 'Digit2' || code === 'Numpad2' || event.keyCode === 50 || event.keyCode === 98;
+  const targetId = isOne ? 'secao-produtos' : isTwo ? 'titulo-carrinho' : null;
+  if (!targetId) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  target.setAttribute('tabindex', '-1');
+  // Rola para o título e coloca o foco nele para que o leitor de tela anuncie o destino.
+  target.scrollIntoView({behavior: 'auto', block: 'center'});
+  requestAnimationFrame(() => target.focus({preventScroll: true}));
+}, {capture: true});
+</script>
+{% endblock %}

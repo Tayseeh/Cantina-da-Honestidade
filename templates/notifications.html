@@ -1,0 +1,10 @@
+{# Listagem completa das notificações do cliente. #}
+{% extends 'base.html' %}
+{% block title %}Notificações | Confia+{% endblock %}
+{% block content %}
+<h1 class="page-title h2 mb-3 d-none d-md-block">Notificações</h1>
+<section class="notifications-page notifications-scroll-area" aria-label="Suas notificações" tabindex="0"><ul class="list-group list-group-flush">
+  {% for n in notificacoes %}<li class="list-group-item notification-bubble"><time class="small text-muted d-block mb-1" datetime="{{ n.criado_em|replace(' ', 'T') }}">{{ n.criado_em|data_hora_br }}</time><p class="mb-0">{{ n.mensagem }}</p></li>
+  {% else %}<li class="list-group-item notification-empty-bubble"><p class="mb-0">Você não tem notificações.</p></li>{% endfor %}
+</ul></section>
+{% endblock %}
