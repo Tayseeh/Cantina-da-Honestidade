@@ -76,18 +76,50 @@ USUARIOS = [
     },
 ]
 
-# Catálogo inicial de produtos fictícios: nome, descrição, custo, venda e estoque.
+# Catálogo oficial de demonstração da Cantina da Honestidade.
+# Formato: (nome, descrição, categoria, custo demonstrativo, preço demonstrativo, estoque).
 PRODUTOS = [
-    ("Água mineral 500 ml", "Garrafa de água mineral sem gás.", 1.00, 2.00, 30),
-    ("Refrigerante lata", "Refrigerante em lata 350 ml.", 3.50, 5.00, 20),
-    ("Suco de caixinha", "Suco de fruta em embalagem individual.", 2.50, 4.00, 20),
-    ("Café", "Café em copo individual.", 1.00, 2.50, 30),
-    ("Pão de queijo", "Porção individual de pão de queijo.", 1.50, 3.00, 25),
-    ("Salgado assado", "Salgado assado de tamanho individual.", 3.00, 5.00, 20),
-    ("Sanduíche natural", "Sanduíche natural embalado individualmente.", 5.00, 8.00, 12),
-    ("Biscoito", "Pacote individual de biscoitos.", 2.00, 3.50, 20),
-    ("Chocolate", "Barra pequena de chocolate.", 2.50, 4.50, 15),
-    ("Barra de cereal", "Barra de cereal individual.", 1.80, 3.50, 15),
+    ("Wanflo - Batata Chips Lisa Clássica", "Batata chips lisa sabor clássico.", "Salgadinhos", 2.50, 4.00, 18),
+    ("Pratic Leve - Batata Ondulada Bacon", "Batata ondulada sabor bacon.", "Salgadinhos", 2.50, 4.00, 18),
+    ("Wanflo - Batata Ondulada Cebola e Salsa", "Batata ondulada sabor cebola e salsa.", "Salgadinhos", 2.50, 4.00, 18),
+    ("Wanflo - Batata Ondulada Original", "Batata ondulada sabor original.", "Salgadinhos", 2.50, 4.00, 18),
+    ("Wanflo - Batata Chips Lisa Picanha na Chapa", "Batata chips lisa sabor picanha na chapa.", "Salgadinhos", 2.50, 4.00, 18),
+    ("Santa Fé - Wafer Surf Morango", "Biscoito wafer sabor morango.", "Biscoitos e Bolinhos", 1.50, 2.50, 20),
+    ("Santa Fé - Wafer Surf Chocolate", "Biscoito wafer sabor chocolate.", "Biscoitos e Bolinhos", 1.50, 2.50, 20),
+    ("Santa Fé - Wafer Surf Limão", "Biscoito wafer sabor limão.", "Biscoitos e Bolinhos", 1.50, 2.50, 20),
+    ("Nestlé - Biscoito Recheado Passatempo Chocolate", "Biscoito recheado sabor chocolate.", "Biscoitos e Bolinhos", 2.00, 3.50, 16),
+    ("Bimbo - Bolinho Ana Maria Gotas de Chocolate", "Bolinho com gotas de chocolate.", "Biscoitos e Bolinhos", 2.50, 4.00, 16),
+    ("Florestal - Flopito Chicle Giga Morango", "Chiclete sabor morango.", "Doces e Balas", 0.50, 1.00, 30),
+    ("Florestal - Flopito Chicle Giga Melancia", "Chiclete sabor melancia.", "Doces e Balas", 0.50, 1.00, 30),
+    ("Florestal - Flopito Chicle Giga Energético", "Chiclete sabor energético.", "Doces e Balas", 0.50, 1.00, 30),
+    ("Florestal - Flopito Chicle Giga Q'Pinta Tutti-Frutti", "Chiclete tutti-frutti que colore a língua de azul.", "Doces e Balas", 0.50, 1.00, 30),
+    ("Santa Helena - Paçoquita Rolha", "Doce de amendoim tipo rolha.", "Doces e Balas", 0.80, 1.50, 24),
+    ("Fini - Tubes Uva", "Bala de gelatina em tubos sabor uva.", "Doces e Balas", 1.00, 2.00, 20),
+    ("Dori - Bala de Gelatina Banana", "Bala de gelatina em formato de banana.", "Doces e Balas", 0.80, 1.50, 20),
+    ("Fini - Tubes Framboesa Pinta Língua", "Bala de gelatina em tubos sabor framboesa.", "Doces e Balas", 1.00, 2.00, 20),
+    ("Fini - Tubes Twister", "Bala de gelatina em tubos sabor frutas silvestres.", "Doces e Balas", 1.00, 2.00, 20),
+    ("Doces Carijós - Pé de Moleque", "Doce de amendoim com açúcar caramelizado.", "Doces e Balas", 0.80, 1.50, 24),
+    ("Tirol - Bebida Láctea Kids Shrek Chocolate", "Bebida láctea UHT sabor chocolate.", "Bebidas", 2.00, 3.50, 18),
+]
+
+NOMES_PRODUTOS_ATIVOS = {item[0].casefold() for item in PRODUTOS}
+PRODUTOS_ANTIGOS_DO_SEED = [
+    "Água mineral 500 ml", "Refrigerante lata", "Suco de caixinha", "Café",
+    "Pão de queijo", "Salgado assado", "Sanduíche natural", "Biscoito",
+    "Chocolate", "Barra de cereal", "Salgadinho ondulado - pacote individual",
+    "Batata chips - pacote individual", "Salgadinho - pacote individual",
+    "Biscoito wafer - pacote", "Biscoito doce - pacote individual",
+    "Biscoito recheado - pacote individual", "Bala sortida - unidade",
+    "Bala mastigável - unidade", "Doce sortido - pacote",
+    "Snack salgado - pacote individual", "Wanflo - Batata ondulada original",
+    "Batata Chips Lisa Clássica", "Batata Ondulada Bacon", "Batata Ondulada Cebola e Salsa",
+    "Batata Ondulada Original", "Batata Chips Lisa Picanha na Chapa", "Wafer Surf Morango",
+    "Wafer Surf Chocolate", "Wafer Surf Limão", "Biscoito Recheado Passatempo Chocolate",
+    "Bolinho Ana Maria Gotas de Chocolate", "Flopito Chicle Giga Morango",
+    "Flopito Chicle Giga Melancia", "Flopito Chicle Giga Energético",
+    "Flopito Chicle Giga Q'Pinta Tutti-Frutti", "Paçoquita Rolha", "Fini Tubes Uva",
+    "Bala de Gelatina Banana", "Fini Tubes Framboesa Pinta Língua", "Fini Tubes Twister",
+    "Pé de Moleque", "Bebida Láctea Tirol Kids Shrek Chocolate",
 ]
 
 
@@ -170,26 +202,31 @@ def inserir_usuarios() -> tuple[int, int, int]:
 
 
 def inserir_produtos() -> tuple[int, int]:
-    """Insere os produtos fictícios que ainda não existem no banco."""
+    """Sincroniza o catálogo sem excluir produtos vinculados a compras antigas."""
     criados = 0
-    ignorados = 0
-    for nome, descricao, custo, preco, estoque in PRODUTOS:
-        existente = query(
-            "SELECT id FROM produtos WHERE LOWER(nome) = LOWER(?) LIMIT 1",
-            (nome,),
-            one=True,
-        )
+    atualizados = 0
+    # Desativa apenas os itens dos catálogos de demonstração anteriores.
+    # Outros produtos cadastrados manualmente e seus históricos são preservados.
+    placeholders = ", ".join(["?"] * len(PRODUTOS_ANTIGOS_DO_SEED))
+    execute(
+        f"UPDATE produtos SET ativo = 0 WHERE LOWER(nome) IN ({placeholders})",
+        tuple(nome.lower() for nome in PRODUTOS_ANTIGOS_DO_SEED),
+    )
+
+    for nome, descricao, categoria, custo, preco, estoque in PRODUTOS:
+        existente = query("SELECT id FROM produtos WHERE LOWER(nome) = LOWER(?) LIMIT 1", (nome,), one=True)
         if existente:
-            ignorados += 1
+            execute("UPDATE produtos SET descricao=?, categoria=?, ativo=1 WHERE id=?", (descricao, categoria, existente["id"]))
+            atualizados += 1
             continue
         execute(
             """INSERT INTO produtos
-               (nome, descricao, preco_compra, preco, estoque, ativo, foto)
-               VALUES (?, ?, ?, ?, ?, 1, '')""",
-            (nome, descricao, custo, preco, estoque),
+               (nome, descricao, categoria, preco_compra, preco, estoque, ativo, foto)
+               VALUES (?, ?, ?, ?, ?, ?, 1, '')""",
+            (nome, descricao, categoria, custo, preco, estoque),
         )
         criados += 1
-    return criados, ignorados
+    return criados, atualizados
 
 
 def main() -> None:
@@ -197,10 +234,10 @@ def main() -> None:
     with app.app_context():
         initialize_database()
         usuarios_criados, usuarios_existentes, clientes_completados = inserir_usuarios()
-        produtos_criados, produtos_existentes = inserir_produtos()
+        produtos_criados, produtos_atualizados = inserir_produtos()
         print("\nCarga de demonstração concluída.")
         print(f"Usuários criados: {usuarios_criados}; já existentes: {usuarios_existentes}; clientes conferidos/completados: {clientes_completados}.")
-        print(f"Produtos criados: {produtos_criados}; já existentes ignorados: {produtos_existentes}.")
+        print(f"Produtos criados: {produtos_criados}; produtos atualizados: {produtos_atualizados}; catálogo ativo: {len(PRODUTOS)} itens.")
         print("Dados já preenchidos, senhas e saldos existentes foram preservados. Campos cadastrais vazios dos clientes de demonstração foram completados.")
         print("\nAcesse o sistema usando um dos usernames e senhas documentados no README.")
 

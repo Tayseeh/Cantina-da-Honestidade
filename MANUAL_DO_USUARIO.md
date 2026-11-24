@@ -1,130 +1,151 @@
-# Confia+ — Manual do Usuário
+# Manual do Usuário — Confia+
 
-Este manual descreve as funções encontradas na versão atual do código do Confia+. O acesso e as opções disponíveis variam conforme o perfil da conta. Os nomes de menus podem mudar em versões futuras.
+## 1. Apresentação
 
-## Sumário
+O Confia+ apoia a operação da Cantina da Honestidade. O sistema organiza o catálogo, o saldo das carteiras, as compras, as recargas e as atividades de gestão.
 
-1. [Perfis de acesso](#1-perfis-de-acesso)
-2. [Primeiro acesso e login](#2-primeiro-acesso-e-login)
-3. [Rotina do cliente](#3-rotina-do-cliente)
-4. [Rotina do operador](#4-rotina-do-operador)
-5. [Rotina do administrador](#5-rotina-do-administrador)
-6. [Notificações](#6-notificações)
-7. [Regras importantes do sistema](#7-regras-importantes-do-sistema)
-8. [Limitações e cuidados](#8-limitações-e-cuidados)
+A interface apresenta recursos diferentes conforme o perfil autenticado: **Cliente**, **Operador** ou **Administrador**.
 
-Para instalar, configurar o banco, executar a carga de demonstração ou fazer backup e restauração, consulte o [README técnico](README.md).
+Este manual descreve os fluxos encontrados na versão atual do código. A disponibilidade de alguns itens pode variar conforme o perfil e o estado da conta.
 
-## 1. Perfis de acesso
+## 2. Acesso ao sistema
 
-O sistema possui três perfis:
+1. Abra o endereço disponibilizado pela equipe responsável.
+2. Informe seu nome de usuário/e-mail e senha, conforme os campos da tela.
+3. No primeiro acesso, siga a etapa de definição de credenciais, quando solicitada.
+4. Para sair, utilize a opção **Sair da conta**.
 
-| Perfil | O que pode fazer |
-|---|---|
-| Cliente | Consultar saldo e movimentações, navegar pelo cardápio, adicionar produtos ao carrinho, confirmar compras com PIN, consultar histórico e editar o próprio perfil e credenciais. |
-| Operador | Consultar clientes e produtos, cadastrar clientes, cadastrar/editar/ativar/desativar produtos, registrar recargas, redefinir senha de clientes e consultar informações operacionais. |
-| Administrador | Consultar painel administrativo, gerenciar contas de administradores e operadores, redefinir senhas dessas contas, consultar relatórios e logs de auditoria. |
+As contas podem ser bloqueadas temporariamente após sucessivas tentativas inválidas de autenticação. Se isso ocorrer, aguarde o período de bloqueio ou solicite orientação ao responsável pelo sistema.
 
-O administrador não substitui o operador nas rotinas de cadastro de clientes, produtos e recargas. O operador não gerencia contas de administradores ou outros operadores. Essas restrições são aplicadas também nas rotas do servidor, não apenas na apresentação dos menus.
+## 3. Perfil Cliente
 
-## 2. Primeiro acesso e login
+### 3.1 Consultar produtos
 
-Para testar a aplicação com as contas fictícias, execute primeiro `python scripts/seed.py` conforme as instruções do README. A lista completa de usuários, senhas e PINs está na seção **9.3 — Contas de demonstração** do README. Essas credenciais são públicas e não devem ser utilizadas em produção.
+1. Acesse **Produtos/Cardápio**.
+2. Navegue pelas categorias disponíveis: **Salgadinhos**, **Biscoitos e Bolinhos**, **Doces e Balas** e **Bebidas**.
+3. Use o campo de busca para localizar um produto.
+4. Confira nome, imagem, preço e disponibilidade antes de adicionar ao carrinho.
 
-Acesse o endereço da aplicação e informe o nome de usuário ou e-mail e a senha. Matrícula e CPF são dados cadastrais e não são identificadores aceitos no login.
+Apenas produtos ativos e disponíveis para venda devem ser apresentados para compra.
 
-Contas criadas pela equipe recebem uma senha temporária. No primeiro acesso, o sistema exige a definição de uma senha pessoal. Para clientes, também exige a criação de um PIN de pagamento com exatamente quatro números. Para administradores e operadores, o primeiro acesso solicita a troca da senha temporária.
+### 3.2 Adicionar produtos ao carrinho
 
-A senha deve ter entre 8 e 20 caracteres, com pelo menos uma letra e um número. Não compartilhe senha ou PIN. Para sair, use a opção de encerramento de sessão.
+1. Selecione o produto desejado.
+2. Use o botão de adicionar.
+3. Ajuste a quantidade no carrinho, se necessário.
+4. Confira os itens e o total antes de finalizar.
 
-## 3. Rotina do cliente
+O QR Code é um atalho para localizar o produto e iniciar sua inclusão no carrinho. A leitura do código não confirma nem paga a compra.
 
-### 3.1 Consultar a carteira
+### 3.3 Finalizar uma compra
 
-Na página inicial, o cliente visualiza o saldo disponível e as movimentações recentes. O saldo é atualizado após compras e recargas registradas pela equipe.
+1. Abra **Carrinho**.
+2. Revise os produtos, quantidades e total.
+3. Informe o PIN de pagamento solicitado.
+4. Se a compra fizer o saldo passar de zero/positivo para negativo, leia e confirme a ciência sobre o saldo negativo.
+5. Conclua a operação e aguarde a confirmação do sistema.
 
-### 3.2 Escolher produtos
+O backend valida novamente o estoque, a situação do produto e o PIN no momento da confirmação. Se o estoque não for suficiente ou o produto não estiver disponível, a compra não deve ser concluída.
 
-Abra o cardápio para visualizar produtos ativos com estoque disponível. É possível adicionar itens ao carrinho pela listagem ou utilizar o fluxo de leitura do QR Code exibido para o produto, quando disponível.
+### 3.4 Entender o saldo negativo
 
-### 3.3 Revisar e confirmar a compra
+A carteira pode ficar negativa conforme a regra de negócio configurada. A confirmação de ciência é solicitada quando uma compra faz o saldo passar de não negativo para negativo. Enquanto a carteira continuar negativa, compras adicionais não repetem essa confirmação. Se uma recarga elevar o saldo para zero ou acima e uma compra posterior voltar a deixá-lo negativo, será solicitada nova confirmação.
 
-No carrinho, confira os produtos, quantidades e total. Ao finalizar, informe o PIN de pagamento. O sistema valida o PIN, confere novamente o estoque e registra a compra, os itens, a baixa de estoque e a movimentação financeira.
+### 3.5 Consultar histórico e notificações
 
-A compra é debitada da carteira. O sistema permite que o saldo fique negativo: nesse caso, a compra é registrada e o valor pendente será compensado por recargas futuras. Enquanto a carteira permanecer com saldo negativo, a mensagem de aviso sobre o saldo negativo será exibida nas compras realizadas.
+- Acesse **Meus pedidos/Histórico** para consultar compras registradas.
+- Acesse **Notificações** para visualizar mensagens recebidas.
+- Acesse **Meu perfil** para consultar ou atualizar os dados pessoais permitidos na tela.
 
-Se o estoque tiver sido alterado e não for mais suficiente, a compra não é concluída; revise o carrinho. Se houver dúvida sobre uma tentativa de compra, consulte o histórico antes de tentar novamente.
+## 4. Perfil Operador
 
-### 3.4 Consultar histórico
+O Operador atua na rotina da cantina. As funções abaixo dependem das permissões implementadas para esse perfil.
 
-A opção de histórico apresenta as compras do próprio cliente, os itens registrados e o total gasto. O cliente também pode consultar as movimentações recentes na página inicial.
+### 4.1 Gerenciar clientes
 
-### 3.5 Perfil e segurança
+1. Abra **Clientes**.
+2. Use a busca por nome, matrícula ou e-mail.
+3. Utilize o filtro para visualizar todos, clientes com saldo negativo e demais situações disponíveis.
+4. Para cadastrar, selecione **Cadastrar** e preencha os campos obrigatórios.
+5. Para gerenciar um cliente, abra o menu de três pontinhos da respectiva linha.
+6. Escolha a ação desejada, como editar dados, ativar/desativar ou redefinir acesso, conforme as opções apresentadas.
 
-Na página de perfil, o usuário pode atualizar seus dados pessoais e foto, alterar a senha e, no caso de clientes, alterar o PIN de pagamento. A senha e o PIN são armazenados como hashes, não como texto simples.
+A matrícula é exibida com formatação visual em grupos. A formatação não altera o valor armazenado no banco.
 
-## 4. Rotina do operador
+### 4.2 Gerenciar produtos
 
-### 4.1 Cadastrar cliente
+1. Abra **Produtos**.
+2. Pesquise pelo nome e use os filtros de situação e categoria.
+3. Para cadastrar, selecione **Cadastrar** e informe nome, descrição, categoria, preço de compra, preço de venda, estoque, limite de estoque baixo e imagem, conforme os campos apresentados.
+4. Para editar, abra os três pontinhos do produto e escolha **Editar**.
+5. Faça as alterações no modal e salve.
 
-Acesse a área de clientes e utilize a opção de novo cadastro. O formulário solicita dados cadastrais e cria uma carteira para o cliente. O sistema gera uma senha temporária para ser entregue diretamente ao titular, em particular. No primeiro acesso, o cliente deverá definir a própria senha e o PIN.
+O campo de preço sugerido calcula o preço de venda com base no custo acrescido de 50%. A sugestão é uma referência; o operador deve conferir o valor antes de salvar.
 
-O cadastro pode ser recusado se matrícula, e-mail, CPF ou nome de usuário já estiverem em uso. A matrícula, CPF e e-mail devem ser conferidos antes de salvar.
+O status apresentado considera a situação do produto e seu estoque. Produtos podem ser desativados sem apagar o registro histórico.
 
-### 4.2 Consultar e administrar clientes
+### 4.3 Registrar recarga
 
-Na listagem de clientes, o operador pode consultar os registros e utilizar as ações disponíveis para editar dados, ativar/desativar contas e redefinir a senha de clientes. A redefinição gera uma senha temporária; o cliente deverá trocá-la no próximo acesso. A desativação preserva o histórico.
+1. Abra **Recargas**.
+2. Localize o cliente usando os dados solicitados pela tela.
+3. Informe o valor recebido.
+4. Confirme o registro somente depois de receber o dinheiro fisicamente.
+5. Confira a confirmação e o histórico de recargas.
 
-### 4.3 Cadastrar e manter produtos
+**Importante:** o fluxo implementado registra recargas em dinheiro. Não considere que o sistema processa Pix, cartão ou integração bancária.
 
-Na área de gerenciamento de produtos, informe nome, descrição, preço de compra, preço de venda, quantidade em estoque e, opcionalmente, foto. Produtos podem ser editados e ativados/desativados. A desativação não apaga o registro nem o histórico de compras associado.
+## 5. Perfil Administrador
 
-O cardápio do cliente exibe apenas produtos ativos e com estoque maior que zero. A visão do operador também permite consultar produtos inativos ou sem estoque.
+### 5.1 Gerenciar usuários da equipe
 
-### 4.4 Registrar recarga
+1. Abra a área de usuários.
+2. Pesquise o administrador ou operador.
+3. Use o menu de três pontinhos da linha.
+4. Para editar, selecione **Editar**. O formulário é aberto em um modal.
+5. Atualize os campos permitidos e selecione **Salvar**.
+6. Para cancelar, feche o modal ou use **Cancelar**.
 
-Acesse Recargas, selecione o cliente pela matrícula e informe o valor. **Registre a recarga somente depois de confirmar o recebimento físico do dinheiro.** Após a confirmação, o valor é somado à carteira e uma movimentação e notificação são registradas.
+O próprio administrador conectado não pode alterar seu próprio perfil administrativo por essa tela. O Administrador gerencia contas da equipe; a gestão de clientes pertence ao fluxo do Operador.
 
+### 5.2 Relatórios
 
-### 5.1 Painel administrativo
+Acesse **Relatórios** para consultar os indicadores e informações disponíveis, como movimentações, vendas, recargas, clientes com saldo negativo e produtos mais vendidos, respeitando o período selecionado na interface.
 
-O painel apresenta indicadores de contas ativas, compras, vendas e recargas no período exibido, clientes com saldo negativo, valor total negativo e movimentações recentes. Confira o período indicado na tela antes de interpretar os números.
+Os resultados refletem os registros existentes no banco. Um painel sem vendas ou recargas no período pode apresentar tabelas vazias ou mensagens de ausência de registros.
 
-### 5.2 Gerenciar contas da equipe
+### 5.3 Logs de auditoria
 
-Na área de usuários, o administrador pode criar e gerenciar contas administrativas e de operadores, editar os dados permitidos, ativar/desativar contas e redefinir senhas. O sistema impede desativar a própria conta pela tela e impede que todas as contas de administrador fiquem inativas.
+Acesse **Logs de auditoria** para consultar ações relevantes registradas pelo sistema, incluindo responsável, ação, alvo, detalhes e data. Os logs apoiam a rastreabilidade; não substituem uma política institucional de auditoria e retenção.
 
-### 5.3 Relatórios e auditoria
+## 6. Regras e cuidados operacionais
 
-A área de relatórios apresenta o histórico de movimentações e informações financeiras consolidadas. A área de logs de auditoria registra ações relevantes, responsável, alvo, detalhes e data. O acesso aos logs e relatórios administrativos é restrito ao perfil administrador.
+- Confira o nome e o preço antes de confirmar uma compra.
+- Confirme fisicamente o recebimento do dinheiro antes de registrar uma recarga.
+- Não compartilhe senha ou PIN.
+- Não utilize contas de demonstração em operação real.
+- Não tente corrigir saldos diretamente no banco sem procedimento autorizado e registro.
+- Em caso de erro, anote a tela, o horário, o usuário e a mensagem apresentada e encaminhe ao suporte responsável.
 
-## 6. Notificações
+## 7. Perguntas frequentes
 
-O sistema registra notificações para o cliente em eventos como recargas. O cliente pode consultar o aviso no balão de notificações ou abrir a página com a lista completa.
+**Esqueci minha senha.**  
+Solicite ao Operador ou Administrador responsável a redefinição de acesso, conforme seu perfil. O fluxo gera uma senha temporária que deve ser alterada no acesso solicitado pelo sistema.
 
-O balão apresenta o resumo mais recente e está disponível nas versões desktop e mobile. Ao clicar em uma notificação, ela é marcada como lida no sistema. O contador considera somente notificações não lidas; depois de marcada como lida, a notificação não volta a aumentar o contador ao atualizar a página ou entrar novamente. Outras notificações ainda não lidas continuam sendo contabilizadas.
+**O produto aparece sem estoque.**  
+O operador deve conferir o estoque cadastrado e atualizar a quantidade, se houver reposição física.
 
-## 7. Regras importantes do sistema
+**O sistema recusou a compra.**  
+Confira se o produto continua ativo, se há estoque suficiente e se o PIN foi informado corretamente. A validação final ocorre no servidor.
 
-- Compras exigem PIN válido e estoque suficiente.
-- O preço aplicado na compra é o preço de venda cadastrado no produto.
-- A compra reduz o estoque e o saldo da carteira na mesma operação transacional.
-- O saldo negativo é permitido. A primeira compra que deixar a carteira negativa exige confirmação; enquanto o saldo atual permanecer negativo, cada nova compra também exige confirmação. O registro de ciência é mantido uma única vez na auditoria. Recargas aumentam o saldo e reduzem o valor pendente; quando o saldo chega a zero ou fica positivo, o aviso deixa de ser exigido.
-- Recargas representam dinheiro recebido fisicamente; não registre crédito antes do recebimento.
-- Contas desativadas não podem entrar no sistema, mas seus registros históricos são preservados.
-- O cadastro público não cria contas: clientes devem solicitar cadastro à equipe da cantina.
+**Por que apareceu a confirmação de saldo negativo?**  
+A compra está projetada para levar a carteira de zero/positivo para um valor negativo. Leia a mensagem antes de confirmar.
 
-## 8. Limitações e cuidados
+**A recarga não aparece.**  
+Confirme se a operação foi concluída e consulte o histórico. Se persistir, informe ao suporte o cliente, valor aproximado e horário; não registre novamente sem verificar se a primeira operação foi processada.
 
-Este manual descreve o comportamento encontrado no código analisado. Não foi realizado teste integrado com uma instância real do MySQL durante a elaboração deste documento. A conciliação de caixa possui estrutura de dados no banco, mas não foi identificada uma tela/rota de operação correspondente nesta versão; portanto, não é descrita como funcionalidade disponível na interface.
+**A matrícula parece diferente da digitada.**  
+A tela agrupa os dígitos para facilitar a leitura. O agrupamento é apenas de apresentação.
 
-A documentação não substitui treinamento operacional. Antes de usar o sistema com dados reais, valide os fluxos de compra, recarga e permissões e restauração de backup em ambiente de teste. As contas e os dados do `scripts/seed.py` são fictícios e destinados apenas à demonstração.
+## 8. Limites desta versão
 
-
-## 9. Ordenação e busca nas listagens
-
-Nas telas que oferecem ordenação, o usuário pode selecionar o cabeçalho da coluna para ordenar os registros conforme o conteúdo exibido. A disponibilidade de cada coluna depende da listagem e do perfil de acesso. Na busca de clientes para recarga, digite parte do nome ou da matrícula, selecione o resultado desejado e confirme a operação.
-
-## 10. Perfil em dispositivos móveis
-
-O operador e o administrador podem acessar a área de perfil pelo menu mobile. Nela, estão disponíveis os dados da conta e as opções de edição e segurança autorizadas ao próprio perfil. A apresentação mobile utiliza cartões e navegação inferior, sem alterar as permissões aplicadas pelo servidor.
+O sistema registra operações e organiza informações, mas não comprova por si só redução de perdas, não realiza conciliação bancária e não substitui o controle físico do dinheiro recebido. A implantação em produção depende de homologação técnica e operacional.

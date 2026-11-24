@@ -56,22 +56,17 @@ def complete_purchase(connection, user, cart_items, idempotency_key, acknowledge
         ).fetchone()
         balance = Decimal(str(wallet["saldo"])) if wallet else Decimal("0.00")
         projected_balance = balance - total
-        acknowledged = connection.execute(
-            "SELECT id FROM logs_auditoria WHERE alvo_id = ? AND acao = ? LIMIT 1",
-            (user["id"], "CIENCIA_SALDO_NEGATIVO"),
-        ).fetchone()
-
-        # Exigir ciência na primeira compra que negativará a carteira e em toda
-        # compra feita enquanto o saldo atual já estiver negativo.
-        requires_negative_acknowledgement = projected_balance < 0 and (
-            balance < 0 or not acknowledged
-        )
+        # Exigir ciência sempre que uma compra fizer o saldo cruzar de zero/positivo
+        # para negativo. Se a carteira já estiver negativa, compras adicionais não
+        # geram uma nova solicitação. Uma recarga que devolva o saldo a >= 0 permite
+        # uma nova ciência na próxima compra que voltar a negativá-lo.
+        requires_negative_acknowledgement = balance >= 0 and projected_balance < 0
         if requires_negative_acknowledgement and not acknowledge_negative_balance:
             raise NegativeBalanceAcknowledgementRequired()
 
-        # Registrar a ciência apenas uma vez para auditoria, sem duplicar o log
-        # nas compras seguintes enquanto a carteira continuar negativa.
-        if projected_balance < 0 and not acknowledged and acknowledge_negative_balance:
+        # Cada nova passagem de saldo não negativo para negativo gera seu próprio
+        # registro de auditoria, mesmo que o cliente já tenha confirmado antes.
+        if requires_negative_acknowledgement and acknowledge_negative_balance:
             connection.execute(
                 "INSERT INTO logs_auditoria "
                 "(responsavel_id, responsavel_nome, responsavel_perfil, acao, alvo_id, alvo_nome, alvo_perfil, detalhes) "

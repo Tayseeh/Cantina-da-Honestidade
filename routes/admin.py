@@ -252,7 +252,7 @@ def users():
     else:
         # O painel administrativo gerencia somente contas da equipe, nunca clientes.
         usuarios = query("SELECT * FROM usuarios WHERE perfil IN ('admin', 'operador') ORDER BY nome")
-    return render_template("users.html", usuarios=usuarios, hoje=today.isoformat(), nascimento_minimo=earliest_birth_date.isoformat(), nova_conta_temporaria=nova_conta_temporaria, senha_redefinida=senha_redefinida, is_operator=is_operator)
+    return render_template("users.html", usuarios=usuarios, hoje=today.isoformat(), nascimento_minimo=earliest_birth_date.isoformat(), nova_conta_temporaria=nova_conta_temporaria, senha_redefinida=senha_redefinida, is_operator=is_operator, current_user_id=current_user()["id"])
 
 
 @app.route("/admin/logs-auditoria")

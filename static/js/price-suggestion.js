@@ -42,14 +42,14 @@
   function refresh(fields) {
     const amount = parsePrice(fields.cost.value);
     if (amount <= 0) {
-      fields.message.textContent = 'Informe um preço de compra válido para calcular a sugestão (acréscimo padrão de 50%).';
+      fields.message.textContent = '';
       fields.button.disabled = true;
       fields.button.removeAttribute('data-suggested');
       return null;
     }
 
     const suggested = Math.round((amount * 1.5 + Number.EPSILON) * 100) / 100;
-    fields.message.textContent = `Sugestão: R$ ${brl(suggested)} (custo + 50%). Clique no botão para aplicar ao preço de venda.`;
+    fields.message.textContent = `Sugestão: R$ ${brl(suggested)} (custo + 50%).`;
     fields.button.disabled = false;
     fields.button.dataset.suggested = suggested.toFixed(2);
     return suggested;

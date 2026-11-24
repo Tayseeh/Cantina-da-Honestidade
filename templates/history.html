@@ -7,13 +7,14 @@
   <label for="orders-date" class="form-label fw-semibold mb-2">Encontrar compra por data</label>
   <div class="orders-date-filter-controls">
     <input type="date" class="form-control" id="orders-date" aria-label="Escolha a data da compra">
+    <button type="button" class="btn btn-success" id="search-orders-date">Buscar</button>
     <button type="button" class="btn btn-outline-secondary" id="clear-orders-date" disabled>Limpar</button>
   </div>
   <small class="text-muted" id="orders-filter-feedback" aria-live="polite"></small>
 </section>
 <section class="orders-mobile orders-scroll-area" id="orders-list" aria-label="Compras realizadas" tabindex="0">
   {% for c in compras %}
-  <article class="order-mobile-card" data-order-date="{{ c.criado_em.strftime('%Y-%m-%d') if c.criado_em else '' }}">
+  <article class="order-mobile-card" data-order-date="{{ c.criado_em|data_br }}" >
     <div class="order-mobile-top"><span class="order-mobile-icon" aria-hidden="true"><i class="bi bi-bag"></i></span><div class="order-mobile-info"><strong>Pedido #{{ c.id }}</strong><small>{{ c.criado_em|data_hora_br }}</small></div><span class="order-mobile-status">Concluído</span></div>
     <div class="d-flex justify-content-end mt-2"><strong class="order-mobile-total">R$ {{ '%.2f'|format(c.pago) }}</strong></div>
     <div class="order-mobile-items">{{ c.itens or 'Itens não disponíveis' }} <i class="bi bi-chevron-right float-end" aria-hidden="true"></i></div>
@@ -21,6 +22,79 @@
   {% else %}<div class="empty-state"><i class="bi bi-receipt fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Você ainda não realizou nenhuma compra.</p></div>{% endfor %}
   <div class="empty-state d-none" id="orders-no-date-results"><i class="bi bi-calendar-x fs-2" aria-hidden="true"></i><p class="mb-0 mt-2">Nenhuma compra encontrada nessa data.</p></div>
 </section>
+
+
+
+
+<script>
+/* Filtro de pedidos: usa a data local de Brasília exibida no histórico. */
+(() => {
+  const initOrdersFilter = () => {
+    const dateInput = document.getElementById('orders-date');
+    const searchButton = document.getElementById('search-orders-date');
+    const clearButton = document.getElementById('clear-orders-date');
+    const feedback = document.getElementById('orders-filter-feedback');
+    const list = document.getElementById('orders-list');
+    const noResults = document.getElementById('orders-no-date-results');
+    if (!dateInput || !searchButton || !clearButton || !feedback || !list || !noResults) return;
+
+    const cards = Array.from(list.querySelectorAll('.order-mobile-card'));
+    const selectedDateBR = isoDate => {
+      const parts = String(isoDate || '').split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '';
+    };
+
+    const applyFilter = () => {
+      const selectedDate = selectedDateBR(dateInput.value);
+      let visibleCount = 0;
+      cards.forEach(card => {
+        const cardDate = (card.dataset.orderDate || '').trim();
+        const matches = !selectedDate || cardDate === selectedDate;
+        card.classList.toggle('d-none', !matches);
+        if (matches) visibleCount += 1;
+      });
+
+      noResults.classList.toggle('d-none', !dateInput.value || visibleCount > 0);
+      clearButton.disabled = !dateInput.value;
+      feedback.textContent = dateInput.value
+        ? `${visibleCount} compra(s) encontrada(s).`
+        : `${cards.length} compra(s) no histórico.`;
+    };
+
+    searchButton.addEventListener('click', event => {
+      event.preventDefault();
+      applyFilter();
+    });
+
+    clearButton.addEventListener('click', event => {
+      event.preventDefault();
+      dateInput.value = '';
+      applyFilter();
+    });
+
+    dateInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        applyFilter();
+      }
+    });
+
+    dateInput.addEventListener('click', () => {
+      if (typeof dateInput.showPicker === 'function') {
+        try { dateInput.showPicker(); } catch (_) {}
+      }
+    });
+
+    applyFilter();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOrdersFilter, { once: true });
+  } else {
+    initOrdersFilter();
+  }
+})();
+</script>
 
 {% if purchase_confirmation %}
 <div class="modal fade" id="purchase-confirmation-modal" tabindex="-1"

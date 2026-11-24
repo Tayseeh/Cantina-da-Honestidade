@@ -1,107 +1,127 @@
-# Arquitetura do Confia+
+# Arquitetura do Sistema — Confia+
 
-## 1. Visão geral
+## 1. Escopo e estado
 
-O Confia+ é uma aplicação web monolítica modular desenvolvida em Python, Flask e MySQL 8. O navegador acessa a aplicação Flask; as rotas recebem as requisições, aplicam as verificações de acesso e coordenam serviços e operações no banco. Os arquivos de interface são renderizados com Jinja2, enquanto CSS, JavaScript, imagens e uploads ficam em `static/`.
+O Confia+ é uma aplicação web Flask para apoiar a operação da Cantina da Honestidade. A arquitetura desta documentação foi conferida com os módulos presentes nesta versão do repositório.
 
-A organização em módulos separa responsabilidades dentro de uma única aplicação. O projeto **não é composto por microsserviços** e não possui uma pasta `migrations/` nesta versão.
+**Estado:** código preparado para execução local e homologação. O ponto de entrada `apli.py` executa o servidor de desenvolvimento Flask com `debug=True`; isso não constitui uma implantação de produção.
+
+## 2. Visão geral
 
 ```mermaid
 flowchart TD
-    U[Usuário / Navegador] -->|HTTP| A[Flask: apli.py e core.py]
-    A --> R[Pacote routes]
-    R --> S[Serviços em services/]
-    R --> W[services/wallet_service.py]
-    R --> M[media_service.py]
-    R --> D[domain_utils.py]
-    S --> DB[database.py]
-    W --> DB
-    A --> SC[schema_service.py]
-    DB --> MYSQL[(MySQL 8)]
-    A --> T[templates: Jinja2]
-    T --> U
-    U --> ST[static: CSS, JavaScript e uploads]
+    U[Cliente / Operador / Administrador] --> B[Navegador: HTML, CSS e JavaScript]
+    B --> F[Aplicação Flask]
+    F --> R[Blueprint funcional por módulos de rotas]
+    R --> S[Serviços de domínio]
+    R --> D[Camada database.py]
+    S --> D
+    D --> M[(MySQL 8)]
+    F --> T[Templates Jinja2]
+    F --> UP[static/uploads]
 ```
 
-## 2. Tecnologias e inicialização
+A aplicação utiliza renderização de páginas no servidor com Jinja2 e endpoints HTTP para operações e chamadas assíncronas pontuais. O navegador apresenta a interface; as regras relevantes são verificadas no backend.
 
-- **Python:** linguagem principal do backend.
-- **Flask:** aplicação web e gerenciamento das requisições.
-- **Jinja2:** renderização dos templates HTML.
-- **MySQL Server 8:** persistência dos dados.
-- **mysql-connector-python:** conexão entre Python e MySQL.
-- **HTML, CSS, Bootstrap e JavaScript:** interface do navegador.
-- **Pillow:** validação e processamento de imagens.
-- **python-dotenv:** carregamento das configurações locais do arquivo `.env`.
+## 3. Tecnologias e dependências
 
-O ponto de entrada é `apli.py`. Ele importa os módulos do pacote `routes`, registrando seus endpoints no aplicativo Flask. Quando executado diretamente, inicializa o banco por meio de `initialize_database()` e inicia o servidor Flask de desenvolvimento.
+| Camada | Tecnologia | Responsabilidade |
+|---|---|---|
+| Backend web | Python + Flask 3.x | Ciclo HTTP, sessão, filtros, validação e registro de rotas |
+| Templates | Jinja2 | Renderização das páginas HTML |
+| Frontend | HTML, CSS, JavaScript e Bootstrap nos templates | Layout responsivo, formulários, menus, modais e interações |
+| Banco | MySQL 8 + InnoDB | Persistência relacional e transações |
+| Driver | mysql-connector-python | Comunicação com MySQL |
+| Configuração | python-dotenv | Carregamento das variáveis do `.env` |
+| Imagens | Pillow | Processamento de imagens enviadas |
+| Testes | unittest | Testes automatizados de serviços e utilitários |
 
-`core.py` cria e configura a instância Flask, carrega configurações e reúne autenticação, autorização, sessão e funções compartilhadas utilizadas pelas rotas. Também importa serviços transversais, como carteira e mídia.
+Dependências declaradas em `requirements.txt`: Flask, Pillow, tzdata, mysql-connector-python e python-dotenv.
 
-`database.py` implementa a camada de acesso ao MySQL e adapta consultas/operações para a interface utilizada pelo restante do projeto.
+## 4. Organização do código
 
-## 3. Organização real dos módulos
+```text
+apli.py
+core.py
+database.py
+schema_service.py
+domain_utils.py
+routes/
+  auth.py
+  shopping.py
+  operations.py
+  profile.py
+  admin.py
+services/
+  checkout_service.py
+  login_attempt_service.py
+  media_service.py
+  product_service.py
+  report_service.py
+  topup_service.py
+  wallet_service.py
+templates/
+static/
+  css/
+  js/
+  uploads/
+scripts/
+  seed.py
+  backup.py
+  restaurar_backup.py
+tests/
+docs/
+```
 
-| Caminho | Responsabilidade |
+### 4.1 Ponto de entrada e núcleo
+
+- `apli.py`: importa a aplicação, inicializa o banco e registra os módulos de rotas.
+- `core.py`: cria a instância Flask, configura sessão, CSRF, filtros Jinja, helpers, autenticação e inicialização do esquema.
+- `database.py`: abre conexões MySQL por requisição, adapta cursores e oferece `query()` e `execute()`.
+- `schema_service.py`: cria as tabelas e executa verificações/migrações pontuais compatíveis com a estrutura existente.
+- `domain_utils.py`: reúne formatações e funções auxiliares de domínio.
+
+### 4.2 Módulos de rotas
+
+| Módulo | Responsabilidade |
 |---|---|
-| `apli.py` | Ponto de entrada; importa as rotas, inicializa o esquema e inicia o servidor Flask em execução direta. |
-| `core.py` | Instância e configuração Flask, sessão, autenticação, autorização, helpers e funções compartilhadas. |
-| `database.py` | Conexão MySQL, consultas, comandos e controle de transações. |
-| `schema_service.py` | Definição e criação inicial das tabelas MySQL. |
-| `services/wallet_service.py` | Consulta de saldo e registro de movimentações financeiras. |
-| `media_service.py` | Validação, processamento e armazenamento de imagens de perfil e produtos. |
-| `domain_utils.py` | Funções auxiliares de domínio, validação, formatação e normalização. |
-| `routes/auth.py` | Login, primeiro acesso e fluxos de autenticação/cadastro inicial. |
-| `routes/profile.py` | Perfil do usuário, dados cadastrais, senha, PIN, foto, notificações e página de ajuda. |
-| `routes/shopping.py` | Catálogo, carrinho, checkout e histórico de compras do cliente. |
-| `routes/operations.py` | Operações de produtos, estoque e recargas. |
-| `routes/admin.py` | Administração de usuários, relatórios e auditoria. |
+| `routes/auth.py` | Login, logout, cadastro e primeiro acesso |
+| `routes/shopping.py` | Catálogo, QR, carrinho, checkout e histórico |
+| `routes/operations.py` | Produtos e recargas |
+| `routes/profile.py` | Perfil, notificações e atalhos de ajuda |
+| `routes/admin.py` | Gestão de usuários, clientes, relatórios e auditoria |
 
-| `services/checkout_service.py` | Regras e processamento transacional das compras. |
-| `services/product_service.py` | Validação e operações especializadas de produtos. |
-| `services/report_service.py` | Consultas e preparação dos dados de relatórios. |
-| `services/topup_service.py` | Registro e processamento de recargas. |
-| `scripts/seed.py` | Carga opcional de contas, carteiras e produtos fictícios para demonstração. |
-| `scripts/backup.py` | Exportação do banco e dos uploads. |
-| `scripts/restaurar_backup.py` | Restauração do banco e dos uploads a partir de um backup. |
-| `templates/` | Páginas HTML renderizadas pelo Jinja2. |
-| `static/css/app.css` | Folha de estilos consolidada da aplicação. |
-| `static/js/app.js` | Interações gerais e comportamentos compartilhados da interface. |
-| `static/js/price-suggestion.js` | Cálculo e aplicação da sugestão de preço de venda (custo + 50%). |
-| `static/js/purchase-confirmation.js` | Comportamento da confirmação visual de compra concluída. |
-| `static/js/table-sort.js` | Ordenação das tabelas por coluna. |
-| `static/js/topup-customer-search.js` | Busca incremental e seleção de clientes na recarga. |
-| `static/` | Imagens e arquivos enviados (uploads). |
-| `tests/` | Testes automatizados de serviços e funções auxiliares. |
-| `docs/` | Documentação do projeto, incluindo este arquivo. |
+O endpoint `/operador/clientes` e `/admin/usuarios` compartilham a função de gestão, com comportamento condicionado ao perfil. O operador recebe a tela de clientes; o administrador recebe a tela de contas da equipe.
 
-## 4. Perfis e autorização
+### 4.3 Serviços
 
-O sistema trabalha com três perfis de acesso:
-
-- **Cliente:** utiliza catálogo, carrinho, carteira, compras, histórico e recursos do próprio perfil.
-- **Operador:** executa atividades operacionais, como gerenciamento de produtos/estoque e recargas, conforme as permissões implementadas.
-- **Administrador:** acessa funções administrativas, usuários, relatórios e registros de auditoria.
-
-As verificações de autenticação e perfil são feitas no backend. A interface pode ocultar opções que não pertencem ao perfil, mas a restrição efetiva depende das verificações realizadas pelas rotas.
-
-## 5. Persistência e modelo de dados
-
-O esquema definido em `schema_service.py` contém nove tabelas, criadas com `CREATE TABLE IF NOT EXISTS`:
-
-| Tabela | Finalidade |
+| Serviço | Responsabilidade |
 |---|---|
-| `usuarios` | Dados cadastrais, username/e-mail, perfil, estado da conta e hashes de senha/PIN. |
-| `carteiras` | Saldo atual de cada usuário; há uma carteira por usuário. |
-| `produtos` | Catálogo, descrição, preço de custo e venda, estoque, limite de estoque baixo, estado e foto. |
-| `compras` | Cabeçalho da compra, cliente, total, valor pago e data. |
-| `itens_compra` | Produtos, quantidades e preços registrados em cada compra. |
-| `movimentacoes` | Compras e recargas, com valores e responsáveis. |
-| `notificacoes` | Mensagens destinadas aos usuários e estado persistente de leitura. |
-| `login_attempts` | Contador persistente de tentativas de autenticação por conta/janela de tempo. |
-| `logs_auditoria` | Registro de ações relevantes, responsável, alvo, detalhes e data. |
+| `checkout_service.py` | Confirmação transacional de compra, validação de estoque, carteira, idempotência e ciência de saldo negativo |
+| `wallet_service.py` | Consulta e movimentações da carteira |
+| `topup_service.py` | Registro de recarga em dinheiro e prevenção de processamento duplicado |
+| `product_service.py` | Validação e interpretação do formulário de produto |
+| `report_service.py` | Montagem de dados para relatórios |
+| `login_attempt_service.py` | Controle de tentativas e bloqueio temporário de autenticação |
+| `media_service.py` | Migração de fotos antigas e processamento/armazenamento de imagens |
 
-Relacionamentos conceituais principais:
+## 5. Modelo de dados
+
+O esquema inicial define nove tabelas:
+
+| Tabela | Conteúdo |
+|---|---|
+| `usuarios` | Dados pessoais, matrícula, e-mail, CPF, username, hashes de senha/PIN, perfil, status e primeiro acesso |
+| `carteiras` | Saldo de cada usuário |
+| `produtos` | Nome, descrição, categoria, preço, estoque, limite de estoque baixo, status e foto |
+| `compras` | Cabeçalho da compra, cliente, total, valor pago, data e chave de idempotência |
+| `itens_compra` | Itens, quantidades, nome/preço/custo registrados na compra |
+| `movimentacoes` | Compras e recargas, valor, responsável, status, motivo e data |
+| `notificacoes` | Mensagens por usuário e estado de leitura |
+| `login_attempts` | Tentativas de login por chave de conta e janela temporal |
+| `logs_auditoria` | Responsável, ação, alvo, detalhes e data |
+
+### 5.1 Relacionamentos principais
 
 ```mermaid
 erDiagram
@@ -115,116 +135,128 @@ erDiagram
     USUARIOS ||--o{ NOTIFICACOES : recebe
 ```
 
-O diagrama é conceitual e resume as relações de negócio; a definição efetiva de colunas, índices e chaves está no código de `schema_service.py`.
+As chaves estrangeiras e índices estão definidos em `schema_service.py`. O diagrama representa os relacionamentos conceituais mais relevantes.
 
-Nesta versão, não existe diretório `migrations/`. A estrutura inicial é criada por `initialize_database()` em `schema_service.py`, importado pelo núcleo da aplicação. `CREATE TABLE IF NOT EXISTS` evita recriar tabelas já existentes, mas não equivale a um mecanismo completo de migração de alterações em tabelas já criadas.
+### 5.2 Inicialização e evolução do esquema
 
-## 6. Fluxos de negócio
+`initialize_database()` utiliza `CREATE TABLE IF NOT EXISTS` e verificações pontuais de colunas, como `categoria` e `estoque_baixo`. Isso preserva tabelas existentes e permite algumas atualizações compatíveis, mas **não é um sistema completo de migrações versionadas**. Mudanças futuras de estrutura devem ser planejadas e testadas com backup prévio.
 
-### 6.1 Autenticação
+## 6. Fluxos centrais
 
-1. O usuário informa suas credenciais na tela de login.
-2. O backend localiza a conta e valida a senha usando o hash armazenado.
-3. A sessão identifica o usuário autenticado.
-4. As rotas verificam o perfil e as permissões para cada operação.
-5. Os fluxos de primeiro acesso e alteração de credenciais são tratados pelas rotas correspondentes.
+### 6.1 Autenticação e autorização
 
-Senhas e PINs são armazenados como hashes; o sistema não precisa guardar o texto original para validá-los.
+1. O usuário envia credenciais.
+2. O backend consulta a conta e verifica o hash da senha.
+3. O estado da conta e o controle de tentativas são considerados.
+4. A sessão guarda a identidade autenticada.
+5. Decoradores de autenticação e perfil restringem as rotas.
+
+Perfis existentes: `cliente`, `operador` e `admin`.
 
 ### 6.2 Compra
 
-1. O cliente seleciona produtos e quantidades no catálogo/carrinho.
-2. O sistema apresenta o resumo e o total da compra.
-3. O cliente informa o PIN para confirmar a operação.
-4. O backend valida as credenciais e verifica novamente as condições da compra, incluindo disponibilidade de estoque.
-5. O serviço de checkout registra a compra, os itens, a movimentação e a atualização do estoque/carteira dentro do fluxo transacional implementado.
+1. O cliente seleciona produtos e quantidades.
+2. O carrinho apresenta o total.
+3. O cliente informa o PIN.
+4. O serviço valida novamente produto ativo, quantidade e estoque.
+5. A carteira é atualizada e a compra, itens e movimentação são persistidos no fluxo transacional.
+6. A chave de idempotência evita processar novamente a mesma solicitação identificada pela chave.
 
-A carteira pode assumir saldo negativo conforme a regra de negócio implementada. A primeira compra que projeta saldo negativo exige confirmação. Depois disso, enquanto o saldo atual permanecer negativo, cada nova compra também exige confirmação. O registro de ciência em `logs_auditoria` é gravado apenas uma vez por cliente; a exigência de confirmação é recalculada pelo saldo atual. O saldo é mantido em `carteiras`; o histórico das operações financeiras é registrado em `movimentacoes`. Recargas são processadas pelos serviços operacionais e refletem no saldo da carteira.
+A carteira permite saldo negativo. O serviço exige ciência quando o saldo atual é zero/positivo e o saldo projetado fica negativo. Enquanto o saldo permanecer negativo, a condição não é repetida em compras adicionais. Se uma recarga levar o saldo para zero ou acima, uma compra posterior que o torne negativo volta a exigir ciência. O evento de ciência é registrado em `logs_auditoria`.
 
 ### 6.3 Recarga
 
-A recarga é registrada por um operador e atualiza a carteira do cliente, com registro correspondente no histórico de movimentações.
+O serviço `topup_service.py` registra a operação como `recarga`, com descrição **Recarga em dinheiro**, responsável operador e chave de idempotência. O código não representa integração com Pix, cartão ou banco.
 
-### 6.4 Produtos e estoque
+### 6.4 Produtos e categorias
 
-As rotas operacionais utilizam o serviço de produtos para validar e processar informações do catálogo. Os produtos possuem preço de custo, preço de venda, estoque, limite de estoque baixo e estado ativo. O catálogo do cliente apresenta os produtos conforme os filtros e condições definidos nas rotas.
+O catálogo usa as categorias `Salgadinhos`, `Biscoitos e Bolinhos`, `Doces e Balas` e `Bebidas`. Os produtos possuem preço de compra, preço de venda, estoque e limite de estoque baixo. O formulário sugere preço de venda com acréscimo de 50% sobre o custo; o preço pode ser conferido/ajustado pelo usuário autorizado.
 
-## 7. Carga de demonstração (`scripts/seed.py`)
+### 6.5 QR Code
 
-O `scripts/seed.py` é opcional e destinado a testes/apresentações locais. Ele define **8 contas** (1 administrador, 2 operadores e 5 clientes), suas carteiras e **10 produtos** fictícios.
+O fluxo QR identifica o produto e oferece sua inclusão no carrinho. A finalização continua dependendo do fluxo normal de checkout e validação de PIN.
 
-Credenciais iniciais das contas criadas pelo seed:
+## 7. Segurança implementada
 
-| Perfil | Usuário | Senha inicial | PIN de compra |
-|---|---|---|---|
-| Administrador | `admin` | `Admin@12345` | Não se aplica |
-| Operador | `operador1` | `Operador@12345` | Não se aplica |
-| Operador | `operador2` | `Operador@12345` | Não se aplica |
-| Cliente | `cliente1` | `Cliente@12345` | `1234` |
-| Cliente | `cliente2` | `Cliente@12345` | `2345` |
-| Cliente | `cliente3` | `Cliente@12345` | `3456` |
-| Cliente | `cliente4` | `Cliente@12345` | `4567` |
-| Cliente | `cliente5` | `Cliente@12345` | `5678` |
+- Hash de senhas e PINs usando funções do Werkzeug.
+- Sessão Flask com duração configurada de 30 minutos.
+- Cookies `HttpOnly` e `SameSite=Lax`; `Secure` é ativado quando `APP_ENV=production`.
+- Proteção CSRF em requisições que alteram estado, por token em formulário/header/JSON.
+- Controle de tentativas de login persistido em `login_attempts`.
+- Verificação de perfil no backend, não apenas ocultação de elementos na interface.
+- Limite de tamanho de requisição configurado em 5 MB.
+- Validação de destino interno para redirecionamentos.
+- Registros de auditoria para ações relevantes.
+- Consultas parametrizadas pelo adaptador de banco.
 
-Os cinco clientes recebem saldo inicial de R$ 20,00 quando a conta/carteira é criada; administrador e operadores recebem carteira com saldo zero. O seed insere dez produtos de exemplo, com preço e estoque iniciais definidos em `scripts/seed.py`.
+### 7.1 Configuração de segredo
 
-O script identifica usuários por username ou e-mail e produtos pelo nome (sem diferenciar maiúsculas de minúsculas). Registros existentes não são recriados. Senhas, PINs já preenchidos, dados cadastrais já preenchidos e saldos existentes são preservados. Para clientes de demonstração já encontrados, o script pode completar alguns campos cadastrais vazios e preencher o PIN somente se ainda não houver hash. Se uma conta não tiver carteira, ela é criada com o saldo definido no seed. Produtos existentes não têm preço, estoque ou descrição atualizados. O script não apaga compras nem movimentações.
+Em desenvolvimento, se `CANTINA_SECRET_KEY` estiver ausente, o código usa uma chave fixa de desenvolvimento e emite aviso. Em `APP_ENV=production`, o processo exige uma chave privada de pelo menos 32 caracteres e interrompe a inicialização se ela não estiver configurada adequadamente.
 
-As credenciais são públicas e devem ser utilizadas somente em ambientes locais de demonstração.
+A chave de desenvolvimento nunca deve ser usada em produção.
 
-## 8. Integridade e segurança
+## 8. Arquivos e imagens
 
-O projeto utiliza, entre outros mecanismos presentes no código:
+Fotos de produtos e perfis são processadas pelo `services/media_service.py` e armazenadas em `static/uploads`. O caminho público de uploads permanece dentro da raiz do projeto, mesmo com o serviço localizado em `services/`.
 
-- MySQL com InnoDB, chaves e restrições relacionais definidas no esquema;
-- hashes para senhas e PINs;
-- verificações de autenticação e perfil no backend;
-- proteção CSRF nos formulários aplicáveis;
-- transações em operações que alteram dados relacionados;
-- registros de auditoria para ações relevantes;
-- variáveis de ambiente para configurações e credenciais;
-- scripts de backup e restauração.
+O backup inclui os arquivos de `static/uploads`, além do dump do MySQL.
 
-Esses mecanismos não substituem uma revisão de segurança antes de utilizar dados reais ou disponibilizar o sistema publicamente.
+## 9. Execução e configuração
 
-## 9. Relatórios, notificações e auditoria
+1. Instalar dependências com `python -m pip install -r requirements.txt`.
+2. Criar o banco MySQL `cantina_honestidade` com `utf8mb4`.
+3. Copiar `.env.example` para `.env` e configurar host, porta, banco, usuário e senha.
+4. Iniciar com `python apli.py`.
+5. Acessar `http://127.0.0.1:5000`.
 
-A aplicação possui rotas e telas para relatórios, notificações e consulta de logs de auditoria. O acesso a esses recursos é condicionado ao perfil e às verificações realizadas no backend. Os dados de auditoria são persistidos em `logs_auditoria`; as notificações são armazenadas em `notificacoes`. No painel do cliente, o resumo de notificações é compartilhado entre desktop e mobile. Ao selecionar uma notificação, o backend registra sua leitura; o contador considera apenas as notificações ainda não lidas e permanece atualizado após recarregar a página.
+O servidor iniciado por `apli.py` usa `debug=True`, porta 5000 e host `0.0.0.0`. Essa configuração é exclusiva para desenvolvimento/homologação e não deve ser exposta diretamente à internet.
 
-## 10. Testes e limites
+## 10. Seed, testes e backup
 
-Os testes automatizados ficam em `tests/` e cobrem serviços e funções selecionados. Para executá-los, utilize o ambiente virtual com as dependências instaladas:
+### Seed
 
-```bash
-python -m pytest -q
-```
+`python scripts/seed.py` carrega contas e produtos fictícios. O script foi escrito para preservar senhas e saldos já existentes e completar campos cadastrais vazios de contas de demonstração. Não execute o seed em produção sem revisar o conteúdo e o impacto esperado.
 
-A presença de testes automatizados não comprova, por si só, todos os fluxos integrados com MySQL, navegador, diferentes perfis ou dispositivos móveis. Antes de uma apresentação ou implantação, execute os principais fluxos no ambiente que será utilizado.
+### Testes
 
-## 11. Implantação simplificada
+`python -m unittest discover -s tests -v`
 
-```mermaid
-flowchart LR
-    B[Navegador desktop/mobile] <-->|HTTP/HTTPS| F[Flask]
-    F --> T[Templates e arquivos estáticos]
-    F <-->|SQL| M[(MySQL 8)]
-    E[.env / variáveis de ambiente] --> F
-```
+A suíte contém testes unitários para checkout, utilitários, tentativas de login, produtos, relatórios e recargas. A suíte não comprova, por si só, funcionamento integral em produção, integração com todos os cenários reais ou compatibilidade visual em todos os dispositivos.
 
-Em desenvolvimento, a aplicação pode ser iniciada localmente com `python apli.py`. O servidor de desenvolvimento do Flask não deve ser exposto diretamente à internet. Para produção, o README descreve uma implantação de referência com servidor WSGI, Nginx, HTTPS, chave secreta privada, credenciais próprias e rotina de backup.
+### Backup e restauração
 
+- `scripts/backup.py`: requer `mysqldump` no PATH; salva dump SQL, ZIP de uploads e manifesto SHA-256.
+- `scripts/restaurar_backup.py`: requer `mysql` no PATH; verifica hashes e solicita digitar `RESTAURAR`. A restauração substitui o banco configurado e extrai os uploads.
 
-## 12. Comentários e documentação do código
+Realizar backup antes de alterações estruturais e testar a restauração em ambiente isolado.
 
-Os módulos Python utilizam docstrings para registrar a responsabilidade de módulos, classes e funções. Os arquivos JavaScript, CSS e templates Jinja2 possuem comentários de identificação e comentários pontuais nos fluxos de interface. A documentação deve explicar decisões e regras de negócio, sem repetir literalmente cada instrução do código.
+## 11. Implantação: estado atual e recomendação
 
-Ao alterar uma funcionalidade, atualize também a seção correspondente deste documento, o `MANUAL_DO_USUARIO.md` quando houver impacto para o usuário e o `README.md` quando houver impacto na instalação, execução ou manutenção.
+### Estado atual
 
+- Aplicação executável localmente pelo servidor de desenvolvimento Flask.
+- Banco MySQL 8.
+- Configuração por `.env`.
+- Arquivos enviados armazenados localmente em `static/uploads`.
 
-## 13. Organização dos arquivos
+### Arquitetura recomendada para produção (ainda depende de implantação e homologação)
 
-- `services/`: serviços e regras reutilizáveis de domínio, incluindo `services/wallet_service.py`.
-- `scripts/`: rotinas administrativas executadas manualmente, como backup, restauração e carga de demonstração.
-- Raiz do projeto: ponto de entrada (`apli.py`), infraestrutura compartilhada (`core.py`, `database.py`) e inicialização do esquema (`schema_service.py`).
+- Linux institucional.
+- Servidor WSGI de produção (por exemplo, Gunicorn).
+- Nginx ou proxy reverso equivalente.
+- HTTPS com certificado válido.
+- MySQL em rede privada, com usuário dedicado e privilégios mínimos.
+- `APP_ENV=production` e chave secreta forte.
+- Cookies seguros, backups automatizados e testes de restauração.
+- Monitoramento, rotação/retenção de logs, permissões de arquivos e processo de atualização controlado.
 
-Os scripts em `scripts/` calculam a raiz do projeto a partir do próprio caminho. Assim, podem ser executados a partir da raiz com `python scripts/nome_do_script.py`, sem depender da pasta atual do terminal.
+Esses itens são recomendações técnicas, não evidência de que a implantação já foi realizada.
+
+## 12. Limitações e pontos de atenção
+
+- Não há integração de pagamento bancário/Pix implementada no fluxo de recarga.
+- Não há evidência de implantação institucional ou homologação de produção nesta versão.
+- `CREATE TABLE IF NOT EXISTS` e verificações pontuais não substituem migrações versionadas.
+- Os testes automatizados cobrem partes selecionadas do domínio; são necessários testes integrados e de aceitação.
+- A operação física de recebimento do dinheiro e conferência de estoque continua sendo responsabilidade da equipe.
+- Não se deve afirmar redução comprovada de perdas sem estudo com dados comparáveis antes/depois.

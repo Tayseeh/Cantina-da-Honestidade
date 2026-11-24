@@ -96,8 +96,9 @@
     <tr class="usuario-linha" data-id="{{ u.id }}" data-perfil="{{ u.perfil }}" data-status="{{ 'ativo' if u.ativo else 'inativo' }}" data-busca="{{ (u.nome ~ ' ' ~ (u.email or '') ~ ' ' ~ (u.username or '') ~ ' ' ~ (u.matricula or ''))|lower }}">
       {% if not is_operator %}<td><div class="admin-user-identity"><span class="admin-user-avatar">{{ (u.nome.split()|first|first ~ (u.nome.split()|last|first if u.nome.split()|length > 1 else ''))|upper }}</span><span class="users-table-login">{{ u.username or '—' }}</span><span class="admin-user-mobile-copy"><strong>{{ u.nome }}</strong><small>{{ u.email or '—' }}</small></span></div></td><td><div class="users-table-name">{{ u.nome }}</div></td><td><span class="users-table-email">{{ u.email or '—' }}</span></td><td><span class="user-role-badge user-role-badge--{{ u.perfil|lower }}">{{ u.perfil|capitalize }}</span></td>{% else %}<td><div class="users-table-name">{{ u.nome }}</div><small class="users-table-email d-block">{{ u.email or '—' }}</small></td><td><span class="users-table-login">{{ u.username or '—' }}</span>{% if u.perfil == 'cliente' %}<small class="d-block text-muted">Matrícula: {{ u.matricula|matricula_br }}</small>{% endif %}</td>{% endif %}
       <td><span class="status-pill {{ 'is-active' if u.ativo else 'is-inactive' }}">{{ 'Ativo' if u.ativo else 'Inativo' }}</span></td>
-      <td><div class="users-table-actions"><div class="dropdown"><button class="btn btn-sm user-actions-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações para {{ u.nome }}"><i class="bi bi-three-dots" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item" type="button" data-bs-toggle="collapse" data-bs-target="#editar-usuario-{{ u.id }}" aria-expanded="false" aria-controls="editar-usuario-{{ u.id }}"><i class="bi bi-pencil me-2"></i>Editar dados</button></li><li><form method="post" onsubmit="return confirm('Gerar uma nova senha temporária para {{ u.nome|e }}?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="reset_password"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item" type="submit"><i class="bi bi-key me-2"></i>Redefinir senha</button></form></li><li><hr class="dropdown-divider"></li><li><form method="post" onsubmit="return confirm('Tem certeza que deseja {{ 'desativar' if u.ativo else 'ativar' }} esta conta?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'deactivate_user' if u.ativo else 'activate_user' }}"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item {{ 'text-danger' if u.ativo else 'text-success' }}" type="submit"><i class="bi {{ 'bi-person-slash' if u.ativo else 'bi-person-check' }} me-2"></i>{{ 'Desativar' if u.ativo else 'Ativar' }}</button></form></li></ul></div></div></td>
+      <td><div class="users-table-actions"><div class="dropdown"><button class="btn btn-sm user-actions-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações para {{ u.nome }}"><i class="bi bi-three-dots" aria-hidden="true"></i></button><ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item" type="button" {% if is_operator %}data-bs-toggle="collapse" data-bs-target="#editar-usuario-{{ u.id }}" aria-expanded="false" aria-controls="editar-usuario-{{ u.id }}"{% else %}data-bs-toggle="modal" data-bs-target="#editar-usuario-modal-{{ u.id }}" aria-controls="editar-usuario-modal-{{ u.id }}"{% endif %}><i class="bi bi-pencil me-2"></i>Editar dados</button></li><li><form method="post" onsubmit="return confirm('Gerar uma nova senha temporária para {{ u.nome|e }}?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="reset_password"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item" type="submit"><i class="bi bi-key me-2"></i>Redefinir senha</button></form></li><li><hr class="dropdown-divider"></li><li><form method="post" onsubmit="return confirm('Tem certeza que deseja {{ 'desativar' if u.ativo else 'ativar' }} esta conta?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="{{ 'deactivate_user' if u.ativo else 'activate_user' }}"><input type="hidden" name="id" value="{{ u.id }}"><button class="dropdown-item {{ 'text-danger' if u.ativo else 'text-success' }}" type="submit"><i class="bi {{ 'bi-person-slash' if u.ativo else 'bi-person-check' }} me-2"></i>{{ 'Desativar' if u.ativo else 'Ativar' }}</button></form></li></ul></div></div></td>
     </tr>
+{% if is_operator %}
     <tr class="users-expanded-row collapse" id="editar-usuario-{{ u.id }}" data-parent-user="{{ u.id }}"><td colspan="{{ 4 if is_operator else 6 }}"><form method="post" class="user-edit-form customer-edit-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="edit_user"><input type="hidden" name="id" value="{{ u.id }}">{% if not is_operator %}
       <section class="user-edit-section customer-edit-section">
         <h3>Dados do usuário</h3>
@@ -113,7 +114,7 @@
         <h3>Dados de acesso</h3>
         <div class="user-edit-fields customer-edit-grid">
           <div><label class="form-label" for="edit-username-{{ u.id }}">Nome de usuário *</label><input id="edit-username-{{ u.id }}" class="form-control" name="username" value="{{ u.username or '' }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras, números e pontos entre palavras.</div></div>
-          {% if u.perfil in ('operador', 'admin') %}<div><label class="form-label" for="edit-perfil-{{ u.id }}">Perfil *</label><select id="edit-perfil-{{ u.id }}" class="form-select" name="perfil" required><option value="operador" {% if u.perfil == 'operador' %}selected{% endif %}>Operador</option><option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Administrador</option></select></div>{% endif %}
+          {% if u.perfil in ('operador', 'admin') %}<div><label class="form-label" for="edit-perfil-{{ u.id }}">Perfil *</label><select id="edit-perfil-{{ u.id }}" class="form-select" name="perfil" required {% if u.id == current_user_id %}disabled{% endif %}><option value="operador" {% if u.perfil == 'operador' %}selected{% endif %}>Operador</option><option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Administrador</option></select>{% if u.id == current_user_id %}<div class="form-text">Seu próprio perfil administrativo não pode ser alterado.</div>{% endif %}</div>{% endif %}
         </div>
       </section>
       {% else %}
@@ -131,7 +132,39 @@
       {% endif %}<div class="user-edit-footer">
       <div class="user-edit-submit"><button class="btn btn-success" type="submit">Salvar alterações</button><button class="btn btn-light btn-cancelar" type="button" data-bs-toggle="collapse" data-bs-target="#editar-usuario-{{ u.id }}" aria-controls="editar-usuario-{{ u.id }}">Cancelar</button></div></div>
     </form></td></tr>
+{% endif %}
   {% endfor %}
   </tbody></table><p id="usuarios-vazio" class="users-table-empty d-none">Nenhuma conta corresponde aos filtros selecionados.</p></div>
+
+{% if not is_operator %}
+{% for u in usuarios %}
+{% set sobrenome_usuario = u.sobrenome or '' %}
+{% set primeiro_nome = u.nome[:-(sobrenome_usuario|length + 1)] if sobrenome_usuario and u.nome.endswith(' ' ~ sobrenome_usuario) else u.nome %}
+<div class="modal fade admin-user-edit-modal" id="editar-usuario-modal-{{ u.id }}" tabindex="-1" aria-labelledby="editar-usuario-modal-titulo-{{ u.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header">
+        <div><h2 class="modal-title h5 fw-bold mb-1" id="editar-usuario-modal-titulo-{{ u.id }}">Editar usuário</h2><p class="text-muted small mb-0">{{ u.nome }}</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4"><form method="post" class="user-edit-form admin-user-edit-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="edit_user"><input type="hidden" name="id" value="{{ u.id }}">
+      <fieldset class="staff-fieldset admin-edit-fieldset">
+        <legend>Dados da conta</legend>
+        <div class="staff-form-grid">
+          <div><label class="form-label" for="edit-nome-{{ u.id }}">Nome *</label><input id="edit-nome-{{ u.id }}" class="form-control" name="nome" value="{{ primeiro_nome }}" maxlength="30" data-user-validation="nome" required><div class="invalid-feedback" id="feedback-nome-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-sobrenome-{{ u.id }}">Sobrenome *</label><input id="edit-sobrenome-{{ u.id }}" class="form-control" name="sobrenome" value="{{ sobrenome_usuario }}" maxlength="30" data-user-validation="sobrenome" required><div class="invalid-feedback" id="feedback-sobrenome-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-email-{{ u.id }}">E-mail *</label><input id="edit-email-{{ u.id }}" class="form-control" type="email" name="email" value="{{ u.email or '' }}" maxlength="50" data-user-validation="email" required><div class="invalid-feedback" id="feedback-email-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-cpf-{{ u.id }}">CPF (opcional)</label><input id="edit-cpf-{{ u.id }}" class="form-control" name="cpf" value="{{ u.cpf or '' }}" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" data-user-validation="cpf"><div class="invalid-feedback" id="feedback-cpf-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-telefone-{{ u.id }}">Telefone (opcional)</label><input id="edit-telefone-{{ u.id }}" class="form-control" type="tel" name="telefone" value="{{ u.telefone or '' }}" inputmode="numeric" maxlength="15" placeholder="(48) 99999-9999" data-user-validation="telefone"><div class="invalid-feedback" id="feedback-telefone-{{ u.id }}"></div></div>
+          <div><label class="form-label" for="edit-username-{{ u.id }}">Nome de usuário *</label><input id="edit-username-{{ u.id }}" class="form-control" name="username" value="{{ u.username or '' }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*" autocomplete="off" required><div class="form-text">3 a 30 caracteres: letras, números e pontos entre palavras.</div></div>
+          {% if u.perfil in ('operador', 'admin') %}<div><label class="form-label" for="edit-perfil-{{ u.id }}">Perfil *</label><select id="edit-perfil-{{ u.id }}" class="form-select" name="perfil" required {% if u.id == current_user_id %}disabled{% endif %}><option value="operador" {% if u.perfil == 'operador' %}selected{% endif %}>Operador</option><option value="admin" {% if u.perfil == 'admin' %}selected{% endif %}>Administrador</option></select>{% if u.id == current_user_id %}<div class="form-text">Seu próprio perfil administrativo não pode ser alterado.</div>{% endif %}</div>{% endif %}
+        </div>
+      </fieldset>
+      <div class="user-edit-footer"><div class="user-edit-submit"><button class="btn btn-success" type="submit">Salvar</button><button class="btn btn-light btn-cancelar" type="button" data-bs-dismiss="modal">Cancelar</button></div></div></form></div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
 </section>
 {% endblock %}

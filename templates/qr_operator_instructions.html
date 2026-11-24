@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Gerar QR Code | Confia+{% endblock %}
+{% block content %}
+<section class="container py-4 py-lg-5" style="max-width: 980px;">
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4 p-lg-5">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <span class="rounded-3 d-inline-flex align-items-center justify-content-center bg-success-subtle text-success p-3">
+          <i class="bi bi-qr-code fs-2" aria-hidden="true"></i>
+        </span>
+        <div>
+          <span class="small fw-bold text-success text-uppercase">Link do produto</span>
+          <h1 class="h3 fw-bold mb-1">Gerar QR Code</h1>
+          <p class="text-muted mb-0">Prepare o código para que o cliente possa adicionar este produto ao carrinho.</p>
+        </div>
+      </div>
+
+      {% if not qr_url %}
+      <div class="alert alert-warning" role="alert">
+        <strong>Não foi possível identificar automaticamente o IP da rede local.</strong>
+        Verifique se o computador está conectado à rede Wi-Fi ou cabeada e tente novamente.
+        Se o problema continuar, abra o Confia+ pelo endereço IPv4 da máquina servidora.
+      </div>
+      {% endif %}
+
+      <div class="rounded-3 p-3 p-md-4 mb-4" style="background:#f3f7ef;">
+        <h2 class="h5 fw-bold mb-2">{{ produto.nome }}</h2>
+        <p class="mb-1">Preço: <strong>R$ {{ '%.2f'|format(produto.preco)|replace('.', ',') }}</strong></p>
+        <p class="text-muted small mb-0">Este link é específico deste produto.</p>
+      </div>
+
+      <div class="row g-4 align-items-center">
+        <div class="col-md-7">
+          <h2 class="h5 fw-bold">1. Copie o link gerado</h2>
+          <p class="text-muted">Use o endereço abaixo para criar o QR Code em uma ferramenta geradora de códigos QR.</p>
+          {% if qr_url %}
+          <label class="form-label fw-semibold" for="qr-product-link">Link para o QR Code</label>
+          <div class="input-group">
+            <input class="form-control" id="qr-product-link" type="text" value="{{ qr_url }}" readonly onclick="this.select()">
+            <button class="btn btn-outline-success" type="button" id="copy-qr-link">
+              <i class="bi bi-clipboard me-1" aria-hidden="true"></i>Copiar
+            </button>
+          </div>
+          <div class="form-text" id="copy-qr-feedback" aria-live="polite">O cliente deve abrir este link com a sessão dele já iniciada no Confia+.</div>
+
+          <h2 class="h5 fw-bold mt-4">2. Gere e imprima o QR Code</h2>
+          <ol class="text-muted ps-3 mb-0">
+            <li>Abra um gerador de QR Code.</li>
+            <li>Cole o link copiado no campo de URL.</li>
+            <li>Gere o código, baixe a imagem e imprima ou disponibilize junto ao produto.</li>
+          </ol>
+          <a class="btn btn-success mt-4" href="https://www.qrcode-monkey.com/" target="_blank" rel="noopener">
+            <i class="bi bi-qr-code me-2" aria-hidden="true"></i>Abrir gerador de QR Code
+          </a>
+          {% endif %}
+        </div>
+
+        {% if qr_url %}
+        <div class="col-md-5 text-center">
+          <div class="qr-print-area">
+            <div class="border rounded-4 p-3 bg-white d-inline-block">
+              <img
+                id="qr-code-image"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=360x360&amp;data={{ qr_url|urlencode }}"
+                alt="QR Code para {{ produto.nome }}"
+                width="280" height="280" class="img-fluid"
+                loading="eager">
+            </div>
+            <h2 class="h6 fw-bold mt-3 mb-1">{{ produto.nome }}</h2>
+            <p class="small text-muted mb-0">Aponte a câmera do celular para acessar este produto.</p>
+          </div>
+          <div class="d-flex flex-wrap justify-content-center gap-2 mt-3 qr-actions">
+            <button class="btn btn-success" type="button" id="download-qr-code">
+              <i class="bi bi-download me-1" aria-hidden="true"></i>Baixar QR Code
+            </button>
+            <button class="btn btn-outline-success" type="button" id="print-qr-code">
+              <i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir
+            </button>
+          </div>
+          <p class="small text-muted mt-2 mb-0 qr-actions">Você pode baixar a imagem ou imprimir diretamente esta etiqueta.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+        <a class="btn btn-outline-secondary" href="{{ url_for('products') }}">
+          <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Voltar aos produtos
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+@media print {
+  @page { size: auto; margin: 12mm; }
+  body * { visibility: hidden !important; }
+  .qr-print-area, .qr-print-area * { visibility: visible !important; }
+  .qr-print-area {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    color: #000 !important;
+  }
+  .qr-print-area img { width: 75mm !important; height: 75mm !important; }
+  .qr-actions { display: none !important; }
+}
+</style>
+
+<script>
+(() => {
+  const copyButton = document.getElementById("copy-qr-link");
+  const field = document.getElementById("qr-product-link");
+  const feedback = document.getElementById("copy-qr-feedback");
+  if (copyButton && field) {
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(field.value);
+        feedback.textContent = "Link copiado. Agora você pode compartilhar ou gerar o QR Code.";
+      } catch (error) {
+        field.focus();
+        field.select();
+        feedback.textContent = "Selecione e copie o link acima.";
+      }
+    });
+  }
+
+  const qrImage = document.getElementById("qr-code-image");
+  const downloadButton = document.getElementById("download-qr-code");
+  if (qrImage && downloadButton) {
+    downloadButton.addEventListener("click", async () => {
+      const originalLabel = downloadButton.innerHTML;
+      downloadButton.disabled = true;
+      downloadButton.textContent = "Preparando imagem...";
+      try {
+        const response = await fetch(qrImage.src, { mode: "cors" });
+        if (!response.ok) throw new Error("Não foi possível baixar a imagem.");
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = "qrcode-produto-{{ produto.id }}.png";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+      } catch (error) {
+        // Fallback: abre a imagem para que o usuário possa salvá-la pelo navegador.
+        window.open(qrImage.src, "_blank", "noopener");
+      } finally {
+        downloadButton.disabled = false;
+        downloadButton.innerHTML = originalLabel;
+      }
+    });
+  }
+
+  const printButton = document.getElementById("print-qr-code");
+  if (printButton) {
+    printButton.addEventListener("click", () => window.print());
+  }
+})();
+</script>
+{% endblock %}

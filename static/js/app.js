@@ -62,29 +62,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchStatus = document.getElementById('product-search-status');
   const empty = document.getElementById('product-search-empty');
   const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
-  function filterSearch() {
-    if (!search) return;
-    const term = normalize(search.value);
+  const filters = document.querySelectorAll('[data-category-filter]');
+  const categorySelect = document.getElementById('catalog-category-select');
+  let selectedCategory = 'all';
+  function applyFilters() {
+    const term = normalize(search?.value || '');
     let count = 0;
-    document.querySelectorAll('.product-search-item').forEach(card => { const show = normalize(card.dataset.productSearch).includes(term); card.classList.toggle('d-none', !show); if (show) count++; });
+    document.querySelectorAll('.product-search-item').forEach(card => {
+      const matchesText = normalize(card.dataset.productSearch).includes(term);
+      const matchesCategory = selectedCategory === 'all' || card.dataset.category === selectedCategory;
+      const show = matchesText && matchesCategory;
+      card.classList.toggle('d-none', !show);
+      if (show) count++;
+    });
     document.querySelectorAll('[data-category-section]').forEach(section => section.classList.toggle('d-none', !section.querySelector('.product-search-item:not(.d-none)')));
     if (empty) empty.classList.toggle('d-none', count !== 0);
     if (searchStatus) searchStatus.textContent = `${count} produtos encontrados.`;
-    if (clear) clear.disabled = !search.value;
+    if (clear) clear.disabled = !search?.value;
   }
-  search?.addEventListener('input', filterSearch);
-  clear?.addEventListener('click', () => { search.value = ''; filterSearch(); search.focus(); });
-  filterSearch();
-  const filters = document.querySelectorAll('[data-category-filter]');
-  const sections = { snacks: document.querySelector('[data-category-section="snacks"]'), bebidas: document.querySelector('[data-category-section="bebidas"]') };
+  search?.addEventListener('input', applyFilters);
+  clear?.addEventListener('click', () => { search.value = ''; applyFilters(); search.focus(); });
   filters.forEach(button => button.addEventListener('click', () => {
-    filters.forEach(item => item.classList.toggle('active', item === button));
-    const selected = button.dataset.categoryFilter;
-    Object.entries(sections).forEach(([key, section]) => { if (section) section.classList.toggle('d-none', selected !== 'all' && selected !== key); });
+    selectedCategory = button.dataset.categoryFilter;
+    filters.forEach(item => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
+    if (categorySelect) categorySelect.value = selectedCategory;
+    applyFilters();
   }));
+  categorySelect?.addEventListener('change', () => {
+    selectedCategory = categorySelect.value;
+    filters.forEach(item => { const active = item.dataset.categoryFilter === selectedCategory; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
+    applyFilters();
+  });
+  applyFilters();
 });
 })();
-
 
 /* ===== catalog-02.js ===== */
 (() => {
@@ -273,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 (() => {
 document.addEventListener('DOMContentLoaded', () => {
   const dateInput = document.getElementById('orders-date');
+  const searchButton = document.getElementById('search-orders-date');
   const clearButton = document.getElementById('clear-orders-date');
   const feedback = document.getElementById('orders-filter-feedback');
   const cards = [...document.querySelectorAll('#orders-list .order-mobile-card')];
@@ -294,7 +306,15 @@ document.addEventListener('DOMContentLoaded', () => {
       : cards.length ? `${cards.length} compra(s) no histórico.` : '';
   }
 
+  // O botão Buscar executa o filtro explicitamente; Enter também funciona.
+  if (searchButton) searchButton.addEventListener('click', filterOrders);
   dateInput.addEventListener('change', filterOrders);
+  dateInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      filterOrders();
+    }
+  });
   clearButton.addEventListener('click', () => {
     dateInput.value = '';
     filterOrders();
@@ -342,50 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
-/* ===== products-01.js ===== */
-(() => {
-const productSearch = document.querySelector('#buscar-produto');
-const productFilter = document.querySelector('#filtro-produtos');
-const productCards = [...document.querySelectorAll('[data-product-card]')];
-const searchCount = document.querySelector('#product-search-count');
-const searchEmpty = document.querySelector('#product-search-empty');
-function filterProducts() {
-  const term = productSearch.value.trim().toLocaleLowerCase('pt-BR');
-  const filter = productFilter.value;
-  let visible = 0;
-  productCards.forEach(card => {
-    const matchesText = card.dataset.searchText.toLocaleLowerCase('pt-BR').includes(term);
-    const stock = Number(card.dataset.stock || 0);
-    const lowStockLimit = Number(card.dataset.lowStock || 5);
-    const active = card.dataset.status === 'ativo';
-    const matchesFilter =
-      (filter === 'todos' && active) ||
-      (filter === 'disponiveis' && active && stock > lowStockLimit) ||
-      (filter === 'baixo' && active && stock > 0 && stock <= lowStockLimit) ||
-      (filter === 'sem_estoque' && active && stock <= 0) ||
-      (filter === 'inativo' && !active);
-    const matches = matchesText && matchesFilter;
-    card.classList.toggle('d-none', !matches);
-    if (card.nextElementSibling?.classList.contains('product-edit-row')) card.nextElementSibling.classList.toggle('d-none', !matches);
-    if (!matches) card.querySelector('.collapse.show')?.classList.remove('show');
-    if (matches) visible++;
-  });
-  searchEmpty.classList.toggle('d-none', visible > 0 || productCards.length === 0);
-  searchCount.textContent = `${visible} de ${productCards.length} produto(s)`;
-}
-productSearch.addEventListener('input', filterProducts);
-productFilter.addEventListener('change', filterProducts);
-document.querySelectorAll('[data-product-filter]').forEach(button => {
-  button.addEventListener('click', () => {
-    productFilter.value = button.dataset.productFilter;
-    document.querySelectorAll('[data-product-filter]').forEach(item => {
-      const selected = item === button;
-      item.classList.toggle('active', selected);
-      item.setAttribute('aria-pressed', String(selected));
-    });
-    filterProducts();
-  });
-});
+/* Filtros de produtos movidos para products-filters.js. */
+
 document.querySelectorAll('[data-product-name]').forEach(input => input.addEventListener('input', () => {
   input.value = input.value.replace(/[^\p{L}\p{N}\s.,'’()\/&+-]/gu, '').replace(/^[^\p{L}\p{N}]+/u, '').slice(0, 80);
 }));
@@ -403,7 +381,6 @@ document.querySelectorAll('[data-money]').forEach(input => input.addEventListene
 document.querySelectorAll('[data-remove-photo]').forEach(button => button.addEventListener('click', () => {
   button.closest('form').querySelector('[data-product-photo]').value = '';
 }));
-})();
 
 
 /* ===== profile-01.js ===== */

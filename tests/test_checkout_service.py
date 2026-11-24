@@ -72,7 +72,7 @@ class CheckoutServiceTests(unittest.TestCase):
         self.assertNotIn("saldo >=", wallet_statement.lower())
 
 
-    def test_negative_balance_requires_acknowledgement_once(self):
+    def test_crossing_from_zero_to_negative_requires_acknowledgement(self):
         connection = FakeConnection(self.products, wallet_balance=Decimal('0.00'))
         with self.assertRaises(NegativeBalanceAcknowledgementRequired):
             complete_purchase(
@@ -83,25 +83,66 @@ class CheckoutServiceTests(unittest.TestCase):
         self.assertFalse(connection.committed)
 
 
-    def test_negative_wallet_requires_acknowledgement_on_every_purchase(self):
-        connection = FakeConnection(
-            self.products, wallet_balance=Decimal("-2.00"), acknowledged=True
-        )
-        with self.assertRaises(NegativeBalanceAcknowledgementRequired):
-            complete_purchase(
-                connection, {"id": 10, "nome": "Cliente", "perfil": "cliente"},
-                {"7": 1}, "key-negative-repeat",
-            )
-        self.assertTrue(connection.rolled_back)
-        self.assertFalse(connection.committed)
-
-    def test_acknowledged_negative_wallet_can_purchase_after_confirming_again(self):
+    def test_acknowledged_negative_wallet_does_not_require_acknowledgement_again(self):
         connection = FakeConnection(
             self.products, wallet_balance=Decimal("-2.00"), acknowledged=True
         )
         complete_purchase(
-            connection, {"id": 10, "nome": "Cliente", "perfil": "cliente"},
-            {"7": 1}, "key-negative-confirmed", acknowledge_negative_balance=True,
+            connection,
+            {"id": 10, "nome": "Cliente", "perfil": "cliente"},
+            {"7": 1},
+            "key-negative-repeat",
+        )
+        audit_inserts = [
+            sql for sql, _ in connection.statements
+            if "insert into logs_auditoria" in sql.lower()
+        ]
+        self.assertEqual(audit_inserts, [])
+        self.assertTrue(connection.committed)
+        self.assertFalse(connection.rolled_back)
+
+
+    def test_new_negative_crossing_after_recharge_requires_new_acknowledgement(self):
+        # Mesmo havendo ciência registrada em uma negativação anterior, uma
+        # carteira recarregada para saldo positivo exige nova ciência ao negativar.
+        connection = FakeConnection(
+            self.products, wallet_balance=Decimal("10.00"), acknowledged=True
+        )
+        with self.assertRaises(NegativeBalanceAcknowledgementRequired):
+            complete_purchase(
+                connection,
+                {"id": 10, "nome": "Cliente", "perfil": "cliente"},
+                {"7": 2},
+                "key-new-negative-crossing",
+            )
+        self.assertTrue(connection.rolled_back)
+        self.assertFalse(connection.committed)
+
+    def test_new_negative_crossing_after_recharge_is_logged_again(self):
+        connection = FakeConnection(
+            self.products, wallet_balance=Decimal("10.00"), acknowledged=True
+        )
+        complete_purchase(
+            connection,
+            {"id": 10, "nome": "Cliente", "perfil": "cliente"},
+            {"7": 2},
+            "key-new-negative-crossing-ack",
+            acknowledge_negative_balance=True,
+        )
+        audit_inserts = [
+            sql for sql, _ in connection.statements
+            if "insert into logs_auditoria" in sql.lower()
+        ]
+        self.assertEqual(len(audit_inserts), 1)
+        self.assertTrue(connection.committed)
+
+    def test_already_negative_wallet_does_not_require_repeated_acknowledgement(self):
+        connection = FakeConnection(self.products, wallet_balance=Decimal("-2.00"))
+        complete_purchase(
+            connection,
+            {"id": 10, "nome": "Cliente", "perfil": "cliente"},
+            {"7": 1},
+            "key-already-negative",
         )
         audit_inserts = [
             sql for sql, _ in connection.statements

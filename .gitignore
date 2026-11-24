@@ -1,33 +1,43 @@
-# Ambiente virtual e cache Python
-.venv/
-venv/
-env/
-__pycache__/
-*.py[cod]
-
-# Bancos locais e backups: nunca publicar dados de usuários
-*.db
-*.sqlite
-*.sqlite3
-*-backup*
-*.bak
-backups/
-
-# Segredos e configurações locais
+# Variáveis de ambiente e segredos
 .env
 .env.*
 !.env.example
-instance/
 
-# Fotos de perfil enviadas por usuários são privadas/localmente geradas
-static/uploads/perfis/*
-!static/uploads/perfis/.gitkeep
+# Ambientes virtuais
+.venv/
+venv/
+env/
 
-# Ferramentas e sistema operacional
-.vscode/
+# Python: cache e arquivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testes e cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.bak
+
+# Configurações locais de IDE
+.vscode/*
+!.vscode/extensions.json
 .idea/
+
+# Sistema operacional
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Logs
-*.log
+# Dados locais e bancos gerados
+instance/
+*.sqlite
+*.sqlite3
+*.db
+
+# Repositório Git (o histórico será mantido no clone local)
+.git/

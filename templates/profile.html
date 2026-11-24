@@ -218,7 +218,7 @@
         </div>
         <div class="col-md-9">
           <div class="row g-4 h-100">
-        <div class="col-lg-8">
+        <div class="col-12">
           <h3 class="h6 fw-bold mb-3">Informações da conta</h3>
           <dl class="row g-3 mb-0 profile-details">
             <div class="col-sm-6">
@@ -231,11 +231,6 @@
             <div class="col-sm-6"><dt>CPF</dt><dd>{{ dados.cpf or 'Não informado' }}</dd></div>
           </dl>
         </div>
-        <aside class="col-lg-4"><div class="profile-wallet h-100">
-          <span class="small text-muted">Saldo da cantina</span>
-          <strong class="text-success fs-4" data-wallet-balance>R$ {{ '%.2f'|format(saldo_atual)|replace('.', ',') }}</strong>
-          <a href="{{ url_for('history') }}" class="btn btn-outline-success btn-sm align-self-start mt-2"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Ver histórico</a>
-        </div></aside>
           </div>
         </div>
       </div>

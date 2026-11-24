@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/app.css') }}?v=20261111-modal-responsive-220261111-refactor" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/app.css') }}?v=20261122-admin-modal-grid-buttons-2" rel="stylesheet">
 </head>
 <body id="topo">
   {% if request.endpoint != 'login' %}
@@ -355,10 +355,11 @@
 </script>
 {% endif %}
 
-<script src="{{ url_for('static', filename='js/app.js') }}?v=20261111-modal-responsive-220261111-purchase-success-modal-1"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=20261120-empty-state-status-filters-2"></script>
+<script src="{{ url_for('static', filename='js/products-filters.js') }}?v=20261120-empty-state-cleanup-1"></script>
 <script src="{{ url_for('static', filename='js/purchase-confirmation.js') }}?v=20261111-modal-responsive-2"></script>
 <script src="{{ url_for('static', filename='js/topup-customer-search.js') }}?v=20261111-recarga-submit-preserve-selection-2"></script>
-<script src="{{ url_for('static', filename='js/price-suggestion.js') }}?v=20261111-price-suggestion-fix-2"></script>
+<script src="{{ url_for('static', filename='js/price-suggestion.js') }}?v=20261120-price-suggestion-inline-1"></script>
 
   <script src="{{ url_for('static', filename='js/table-sort.js') }}?v=20261111-sort-1"></script>
 </body>

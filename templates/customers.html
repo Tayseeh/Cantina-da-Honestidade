@@ -60,7 +60,16 @@
   </div>
 
   <section class="customers-table-card" aria-label="Clientes cadastrados">
-    <div class="customers-table-scroll"><table class="customers-table"><thead><tr><th scope="col" data-sortable>Cliente</th><th scope="col" data-sortable>Matrícula</th><th scope="col" data-sortable>E-mail</th><th scope="col" data-sortable>Saldo</th><th scope="col" data-sortable>Status</th><th><span class="visually-hidden">Ações</span></th></tr></thead><tbody id="lista-clientes">
+    <div class="customers-table-scroll"><table class="customers-table customers-table-no-horizontal">
+      <colgroup>
+        <col style="width:27%">
+        <col style="width:15%">
+        <col style="width:23%">
+        <col style="width:13%">
+        <col style="width:13%">
+        <col style="width:9%">
+      </colgroup>
+      <thead><tr><th scope="col" data-sortable>Cliente</th><th scope="col" data-sortable>Matrícula</th><th scope="col" data-sortable>E-mail</th><th scope="col" data-sortable>Saldo</th><th scope="col" data-sortable>Status</th><th><span class="visually-hidden">Ações</span></th></tr></thead><tbody id="lista-clientes">
     {% for u in usuarios %}
       {% set sobrenome_usuario = u.sobrenome or '' %}
       {% set primeiro_nome = u.nome[:-(sobrenome_usuario|length + 1)] if sobrenome_usuario and u.nome.endswith(' ' ~ sobrenome_usuario) else u.nome %}
@@ -90,7 +99,18 @@
         </div>
       </section><div class="customer-edit-actions"><button class="btn btn-success" type="submit">Salvar alterações</button><button class="btn btn-light btn-cancelar" type="button" data-close-edit="{{ u.id }}">Cancelar</button></div></form></td></tr>
     {% else %}<tr><td colspan="6" class="customer-empty">Nenhum cliente cadastrado.</td></tr>{% endfor %}
-    </tbody></table><p class="customer-empty d-none" id="clientes-sem-resultado">Nenhum cliente encontrado com esses filtros.</p></div>
+      <tr id="clientes-sem-resultado" class="d-none">
+        <td colspan="6" class="customer-empty text-center py-5">
+          <div class="customer-empty-state-content">
+            <div class="customer-empty-state-title">
+              <i class="bi bi-search me-2" aria-hidden="true"></i>
+              <strong>Nenhum cliente encontrado</strong>
+            </div>
+            <button type="button" class="btn btn-outline-success mt-3" id="clientes-limpar-filtros">Limpar filtros</button>
+          </div>
+        </td>
+      </tr>
+    </tbody></table></div>
   </section>
 </section>
 
@@ -102,6 +122,7 @@
  const mobileFilter = document.getElementById('filtro-clientes');
  const count = document.getElementById('clientes-visiveis');
  const empty = document.getElementById('clientes-sem-resultado');
+ const clearFilters = document.getElementById('clientes-limpar-filtros');
  let filter = 'todos';
  function applyFilters() {
    const term = search.value.trim().toLocaleLowerCase('pt-BR'); let visible = 0;
@@ -115,6 +136,17 @@
    count.textContent = `${visible} ${visible === 1 ? 'cliente' : 'clientes'}`; empty.classList.toggle('d-none', visible > 0);
  }
  search.addEventListener('input', applyFilters);
+ if (clearFilters) clearFilters.addEventListener('click', () => {
+   search.value = '';
+   filter = 'todos';
+   if (mobileFilter) mobileFilter.value = 'todos';
+   buttons.forEach(item => {
+     const selected = item.dataset.customerFilter === 'todos';
+     item.classList.toggle('active', selected);
+     item.setAttribute('aria-pressed', String(selected));
+   });
+   applyFilters();
+ });
  if (mobileFilter) mobileFilter.addEventListener('change', () => { filter = mobileFilter.value; buttons.forEach(item => { const selected = item.dataset.customerFilter === filter; item.classList.toggle('active', selected); item.setAttribute('aria-pressed', String(selected)); }); applyFilters(); });
  buttons.forEach(button => button.addEventListener('click', () => { filter = button.dataset.customerFilter; if (mobileFilter) mobileFilter.value = filter; buttons.forEach(item => { const selected = item === button; item.classList.toggle('active', selected); item.setAttribute('aria-pressed', String(selected)); }); applyFilters(); }));
  document.querySelectorAll('[data-close-edit]').forEach(button => {

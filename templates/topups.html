@@ -80,7 +80,16 @@
                 <td>{{ r.cliente }}<small class="d-block text-muted">{{ r.matricula or 'Sem matrícula' }}</small></td>
                 <td class="text-end text-nowrap fw-bold text-success">R$ {{ '%.2f'|format(r.valor) }}</td>
               </tr>
-              {% else %}<tr><td colspan="3" class="text-center text-muted py-4">Ainda não há recargas registradas.</td></tr>{% endfor %}
+              {% else %}
+              <tr class="topups-empty-row">
+                <td colspan="3">
+                  <div class="topups-empty-state">
+                    <i class="bi bi-wallet2" aria-hidden="true"></i>
+                    <span>Ainda não há recargas registradas.</span>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
               </tbody>
             </table>
           </div>

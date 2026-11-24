@@ -38,6 +38,7 @@ def initialize_database():
         """CREATE TABLE IF NOT EXISTS produtos (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             nome VARCHAR(180) NOT NULL, descricao TEXT NULL,
+            categoria VARCHAR(60) NOT NULL DEFAULT 'Doces e Balas',
             preco DECIMAL(12,2) NOT NULL, estoque INT NOT NULL DEFAULT 0,
             estoque_baixo INT NOT NULL DEFAULT 5,
             ativo TINYINT(1) NOT NULL DEFAULT 1,
@@ -122,6 +123,22 @@ def initialize_database():
             "ALTER TABLE produtos ADD COLUMN estoque_baixo INT NOT NULL DEFAULT 5"
         )
         cursor.close()
+
+    # Migração compatível: adiciona categoria aos produtos existentes sem apagar dados.
+    category_check = connection.execute(
+        "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' "
+        "AND COLUMN_NAME = 'categoria'"
+    ).fetchone()
+    if not category_check:
+        cursor = connection.execute(
+            "ALTER TABLE produtos ADD COLUMN categoria VARCHAR(60) NOT NULL DEFAULT 'Doces e Balas'"
+        )
+        cursor.close()
+    # Classifica registros antigos por nome apenas durante a migração, sem alterar histórico.
+    connection.execute("UPDATE produtos SET categoria='Bebidas' WHERE categoria='Doces e Balas' AND (LOWER(nome) LIKE '%água%' OR LOWER(nome) LIKE '%agua%' OR LOWER(nome) LIKE '%refrigerante%' OR LOWER(nome) LIKE '%suco%' OR LOWER(nome) LIKE '%bebida%' OR LOWER(nome) LIKE '%café%')")
+    connection.execute("UPDATE produtos SET categoria='Biscoitos e Bolinhos' WHERE categoria='Doces e Balas' AND (LOWER(nome) LIKE '%biscoito%' OR LOWER(nome) LIKE '%wafer%' OR LOWER(nome) LIKE '%bolinho%')")
+    connection.execute("UPDATE produtos SET categoria='Salgadinhos' WHERE categoria='Doces e Balas' AND (LOWER(nome) LIKE '%batata%' OR LOWER(nome) LIKE '%salgadinho%' OR LOWER(nome) LIKE '%chips%')")
 
     # Índice único opcional: MySQL permite múltiplos NULL, como a regra do SQLite.
     connection.commit()

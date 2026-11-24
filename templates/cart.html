@@ -70,8 +70,6 @@
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
   const money = value => new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(Number(value || 0));
   const walletBalance = Number({{ saldo_atual|default(0)|tojson }});
-  const acknowledgementRecorded = {{ 'true' if saldo_negativo_ciencia_registrada else 'false' }};
-  const walletAlreadyNegative = walletBalance < 0;
   const negativeWarning = document.getElementById('cart-negative-warning');
   const acknowledgement = document.getElementById('cart-negative-acknowledgement');
   const acknowledgementCheckbox = document.getElementById('cart-acknowledge-negative-balance');
@@ -81,19 +79,10 @@
 
   function refreshNegativeWarning(total) {
     const projected = walletBalance - Number(total || 0);
-    const requiresAcknowledgement = projected < 0 && (walletAlreadyNegative || !acknowledgementRecorded);
-    const warningMessage = document.getElementById('cart-negative-warning-message');
-    const acknowledgementLabel = document.getElementById('cart-negative-acknowledgement-label');
-    if (warningMessage) {
-      warningMessage.textContent = walletAlreadyNegative
-        ? 'Sua carteira já está com saldo negativo. Esta compra manterá ou aumentará o valor pendente:'
-        : 'Esta compra deixará sua carteira com saldo negativo de:';
-    }
-    if (acknowledgementLabel) {
-      acknowledgementLabel.textContent = walletAlreadyNegative
-        ? 'Entendi que minha carteira já está negativa e que esta compra manterá ou aumentará o valor pendente.'
-        : 'Entendi que esta compra deixará minha carteira com saldo negativo.';
-    }
+    // Solicita ciência quando esta compra cruza o saldo de não negativo para negativo.
+    // Se a carteira já estiver negativa, não repete o aviso; após recarga positiva,
+    // uma nova compra que negativar o saldo solicitará nova ciência.
+    const requiresAcknowledgement = walletBalance >= 0 && projected < 0;
     if (negativeWarning) negativeWarning.classList.toggle('d-none', !requiresAcknowledgement);
     if (acknowledgement) acknowledgement.classList.toggle('d-none', !requiresAcknowledgement);
     if (projectedBalance) projectedBalance.textContent = money(projected);

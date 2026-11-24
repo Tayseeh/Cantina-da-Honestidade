@@ -1,6 +1,6 @@
 """Configuração do Flask e funções compartilhadas pelas rotas.
 
-Serviços especializados ficam em media_service.py e schema_service.py.
+Serviços especializados ficam no pacote services/; schema_service.py prepara o banco.
 Este módulo mantém imports de compatibilidade para as rotas existentes.
 """
 
@@ -23,7 +23,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from database import close_db, execute, get_db as db, query, DatabaseIntegrityError
 from services.wallet_service import wallet_balance
-from media_service import process_profile_photo, store_product_photo, migrate_legacy_product_photos
+from services.media_service import process_profile_photo, store_product_photo, migrate_legacy_product_photos
 from schema_service import initialize_database
 from domain_utils import (
     format_br_phone, format_datetime_br, money,
@@ -39,7 +39,7 @@ app = Flask(__name__)
 @app.template_filter("matricula_br")
 def format_enrollment_br(value):
     """Formata matrículas de até 14 dígitos em grupos 4-4-5-1 para exibição."""
-    digits = re.sub(r"\\D", "", str(value or ""))[:14]
+    digits = re.sub(r"\D", "", str(value or ""))[:14]
     if not digits:
         return "—"
     if len(digits) == 14:

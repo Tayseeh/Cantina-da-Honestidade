@@ -1,6 +1,8 @@
 """Rotas de shopping do Confia+."""
 
 import re
+import ipaddress
+import socket
 
 from services.checkout_service import (
     complete_purchase, UnavailableProductError, NegativeBalanceAcknowledgementRequired,
@@ -27,6 +29,46 @@ from core import (
     uuid,
     wallet_balance,
 )
+
+
+def _detect_lan_ipv4():
+    """Detecta o IPv4 privado usado pela máquina para alcançar a rede."""
+    try:
+        # UDP connect faz apenas a seleção local da interface/rota; não envia dados.
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("192.0.2.1", 80))
+            candidate = sock.getsockname()[0]
+        address = ipaddress.ip_address(candidate)
+        if address.version == 4 and address.is_private and not address.is_loopback:
+            return candidate
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def _qr_lan_url(product_id):
+    """Monta a URL do QR Code usando o IP privado da máquina servidora."""
+    requested_host = request.host.split(":", 1)[0].strip("[]")
+    try:
+        requested_ip = ipaddress.ip_address(requested_host)
+    except ValueError:
+        requested_ip = None
+
+    # Se a página já foi aberta pelo IP privado da rede, preserva esse IP.
+    if requested_ip and requested_ip.version == 4 and requested_ip.is_private and not requested_ip.is_loopback:
+        lan_ip = str(requested_ip)
+    else:
+        # Em localhost/127.0.0.1 ou hostname, descobre a interface LAN do servidor.
+        lan_ip = _detect_lan_ipv4()
+
+    if not lan_ip:
+        return None
+
+    port = str(request.environ.get("SERVER_PORT") or "5000")
+    scheme = request.scheme or "http"
+    default_port = (scheme == "http" and port == "80") or (scheme == "https" and port == "443")
+    authority = lan_ip if default_port else f"{lan_ip}:{port}"
+    return f"{scheme}://{authority}{url_for('qr_add', product_id=product_id)}"
 
 def cart():
     """Retorna os dados do carrinho mantido na sessão."""
@@ -96,9 +138,20 @@ def qr_add(product_id):
     user = current_user()
     if not user:
         return redirect(url_for("login", next=url_for("qr_add", product_id=product_id)))
+    if user["perfil"] == "operador":
+        # Para o operador, o link do QR Code deve servir como material de geração
+        # e não abrir o fluxo de compra destinado exclusivamente ao cliente.
+        qr_url = _qr_lan_url(product_id)
+        return render_template(
+            "qr_operator_instructions.html",
+            produto=product,
+            qr_url=qr_url,
+        )
     if user["perfil"] != "cliente":
         abort(403)
-    return render_template("qr_confirm.html", produto=product, next_url=_safe_internal_destination(request.args.get("next")))
+    # Após a confirmação, retorna ao cardápio com o carrinho aberto e visível.
+    next_url = _safe_internal_destination(request.args.get("next")) or url_for("catalog", qr_added=1)
+    return render_template("qr_confirm.html", produto=product, next_url=next_url)
 
 @app.route("/qr/<int:product_id>/adicionar", methods=["POST"])
 @role_required("cliente")
@@ -130,10 +183,6 @@ def show_cart():
         itens=items,
         total=total,
         saldo_atual=wallet_balance(current_user()["id"]),
-        saldo_negativo_ciencia_registrada=bool(query(
-            "SELECT id FROM logs_auditoria WHERE alvo_id = ? AND acao = ? LIMIT 1",
-            (current_user()["id"], "CIENCIA_SALDO_NEGATIVO"), one=True
-        )),
         checkout_key=uuid.uuid4().hex,
     )
 
@@ -195,10 +244,6 @@ def checkout():
             itens=items,
             total=total,
             saldo_atual=wallet_balance(user["id"]),
-            saldo_negativo_ciencia_registrada=bool(query(
-                "SELECT id FROM logs_auditoria WHERE alvo_id = ? AND acao = ? LIMIT 1",
-                (user["id"], "CIENCIA_SALDO_NEGATIVO"), one=True
-            )),
             checkout_key=uuid.uuid4().hex,
             pin_error=message,
         ), 400

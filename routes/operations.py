@@ -33,6 +33,9 @@ def products():
         try:
             name = request.form.get("nome", "").strip()
             description = request.form.get("descricao", "").strip()
+            category = request.form.get("categoria", "").strip()
+            if category not in ("Salgadinhos", "Biscoitos e Bolinhos", "Doces e Balas", "Bebidas"):
+                raise ValueError("Selecione uma categoria válida.")
             raw_purchase = request.form.get("preco_compra", "").strip()
             raw_sale = request.form.get("preco_venda", "").strip()
             raw_stock = request.form.get("estoque", "").strip()
@@ -51,7 +54,7 @@ def products():
             low_stock = int(raw_low_stock)
             photo_bytes = process_profile_photo(request.files.get("foto"))
             photo_path, image_disk_path = store_product_photo(photo_bytes)
-            product_id = execute("INSERT INTO produtos (nome, descricao, preco_compra, preco, estoque, estoque_baixo, foto) VALUES (?, ?, ?, ?, ?, ?, ?)", (name, description, float(purchase_price), float(sale_price), stock, low_stock, photo_path))
+            product_id = execute("INSERT INTO produtos (nome, descricao, categoria, preco_compra, preco, estoque, estoque_baixo, foto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (name, description, category, float(purchase_price), float(sale_price), stock, low_stock, photo_path))
             registrar_auditoria("Produto cadastrado", {"id": product_id, "nome": name, "perfil": "produto"}, f"Custo: R$ {purchase_price:.2f}; venda: R$ {sale_price:.2f}; estoque inicial: {stock}")
             flash("Produto cadastrado.", "success")
         except (ValueError, KeyError, OSError) as error:
@@ -59,7 +62,7 @@ def products():
                 os.remove(image_disk_path)
             flash(str(error) if isinstance(error, ValueError) and str(error) else "Confira os dados do produto e tente novamente.", "danger")
         return redirect(url_for("products"))
-    return render_template("products.html", produtos=query("SELECT * FROM produtos ORDER BY ativo DESC, nome"))
+    return render_template("products.html", produtos=query("SELECT * FROM produtos ORDER BY ativo DESC, nome"), categorias=["Salgadinhos", "Biscoitos e Bolinhos", "Doces e Balas", "Bebidas"])
 
 @app.route("/produtos/<int:product_id>", methods=["POST"])
 @role_required("operador")
@@ -80,6 +83,9 @@ def edit_product(product_id):
     try:
         name = request.form.get("nome", "").strip()
         description = request.form.get("descricao", "").strip()
+        category = request.form.get("categoria", "").strip()
+        if category not in ("Salgadinhos", "Biscoitos e Bolinhos", "Doces e Balas", "Bebidas"):
+            raise ValueError("Selecione uma categoria válida.")
         raw_purchase = request.form.get("preco_compra", "").strip()
         raw_sale = request.form.get("preco_venda", "").strip()
         raw_stock = request.form.get("estoque", "").strip()
@@ -102,7 +108,7 @@ def edit_product(product_id):
             photo_path, image_disk_path = store_product_photo(photo_bytes)
         elif request.form.get("remover_foto"):
             photo_path = ""
-        execute("UPDATE produtos SET nome=?, descricao=?, preco_compra=?, preco=?, estoque=?, estoque_baixo=?, foto=? WHERE id=?", (name, description, float(purchase_price), float(sale_price), stock, low_stock, photo_path, product_id))
+        execute("UPDATE produtos SET nome=?, descricao=?, categoria=?, preco_compra=?, preco=?, estoque=?, estoque_baixo=?, foto=? WHERE id=?", (name, description, category, float(purchase_price), float(sale_price), stock, low_stock, photo_path, product_id))
         registrar_auditoria("Produto editado", {"id": product_id, "nome": name, "perfil": "produto"}, f"Preço de compra: R$ {float(product['preco_compra'] or 0):.2f} → R$ {purchase_price:.2f}; preço de venda: R$ {float(product['preco'] or 0):.2f} → R$ {sale_price:.2f}; estoque: {product['estoque']} → {stock}; limite de estoque baixo: {product.get('estoque_baixo', 5)} → {low_stock}")
         if product["foto"] and photo_path != product["foto"] and product["foto"].startswith("uploads/produtos/"):
             old_image_path = os.path.join(BASE_DIR, "static", "uploads", "produtos", os.path.basename(product["foto"]))

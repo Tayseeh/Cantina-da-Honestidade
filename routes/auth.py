@@ -88,10 +88,24 @@ def home():
             "estoque_baixo": query("SELECT COUNT(*) AS total FROM produtos WHERE ativo = 1 AND estoque > 0 AND estoque <= estoque_baixo", one=True)["total"],
             "sem_estoque": query("SELECT COUNT(*) AS total FROM produtos WHERE ativo = 1 AND estoque <= 0", one=True)["total"],
         }
-        movimentacoes_operador = query(
-            "SELECT m.*, u.nome AS cliente FROM movimentacoes m JOIN usuarios u ON u.id = m.usuario_id ORDER BY m.criado_em DESC, m.id DESC LIMIT 5"
+        clientes_negativos_operador = query(
+            "SELECT u.id, u.nome, c.saldo FROM carteiras c "
+            "JOIN usuarios u ON u.id = c.usuario_id "
+            "WHERE u.perfil='cliente' AND c.saldo < 0 "
+            "ORDER BY c.saldo ASC, u.nome ASC"
         )
-        return render_template("operator_home.html", resumo=resumo_operador, movimentacoes_recentes=movimentacoes_operador)
+        produtos_mais_vendidos_operador = query(
+            "SELECT ic.produto_nome AS produto, SUM(ic.quantidade) AS quantidade, "
+            "SUM(ic.quantidade * ic.preco_unitario) AS valor_vendido "
+            "FROM itens_compra ic JOIN compras c ON c.id=ic.compra_id "
+            "GROUP BY ic.produto_nome ORDER BY quantidade DESC, valor_vendido DESC LIMIT 5"
+        )
+        return render_template(
+            "operator_home.html",
+            resumo=resumo_operador,
+            clientes_negativos=clientes_negativos_operador,
+            produtos_mais_vendidos=produtos_mais_vendidos_operador,
+        )
     if user["perfil"] == "admin":
         # Indicadores voltados à gestão de acessos e ao uso geral do sistema.
         # Resumos administrativos: acessos ativos e atividade financeira recente.
@@ -125,10 +139,6 @@ def catalog():
         itens_carrinho=items,
         total_carrinho=total,
         saldo_atual=wallet_balance(current_user()["id"]),
-        saldo_negativo_ciencia_registrada=bool(query(
-            "SELECT id FROM logs_auditoria WHERE alvo_id = ? AND acao = ? LIMIT 1",
-            (current_user()["id"], "CIENCIA_SALDO_NEGATIVO"), one=True
-        )),
         checkout_key=uuid.uuid4().hex,
     )
 
